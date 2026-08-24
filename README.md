@@ -8,6 +8,10 @@ transaction.
 rebalance, zero fitted parameters. It exists to be a baseline, not a submission — every
 later change is measured as a delta against it.
 
+> **New to the repo, or reading this from a finance rather than an engineering
+> background?** Start with **[`WALKTHROUGH.md`](WALKTHROUGH.md)** — the full story of what
+> was built, what was tested and what was found, with no code required.
+
 ---
 
 ## Running it
