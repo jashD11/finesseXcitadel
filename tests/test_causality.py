@@ -19,6 +19,7 @@ import pytest
 from src.calendar import formation_cutoff
 from src.features import momentum_12_1
 from src.select import top_n
+from src.noise import band
 from src.universe import eligible_at
 
 SRC = Path(__file__).resolve().parent.parent / "src"
@@ -115,12 +116,30 @@ def test_the_scramble_test_is_not_vacuous(cfg, panel, rebalances):
         "the signal does not depend on its own lookback window"
 
 
-@pytest.mark.xfail(strict=True, reason="noise.band blocked on B4")
-def test_noise_band_draws_from_the_as_of_eligible_set():
+def test_noise_band_draws_only_from_the_as_of_eligible_set(cfg, panel, rebalances,
+                                                          monkeypatch):
     """
-    Defence #6. Drawing from names with full 2021-25 history leaks survivorship into
-    the band and makes it too easy to beat.
+    Defence #6. Drawing from names with full 2021-25 history would leak survivorship into
+    the band and make it too easy to beat.
+
+    Tested by invariance rather than by inspecting the draws: an excluded name's prices
+    are scrambled beyond recognition, and the band must come out bit-identical. It can
+    only do that if the name was never picked.
     """
-    from src.config import load
-    from src.noise import band
-    band(load(), pd.DataFrame(), pd.DataFrame(), pd.DatetimeIndex([]))
+    monkeypatch.setitem(cfg._flat, "mandate.book_size", 2)
+    monkeypatch.setitem(cfg._flat, "noise.n_draws", 60)
+
+    names = sorted(panel.symbols[panel.symbols != "FFF"].index)
+    excluded, allowed = names[0], names[1:]
+    elig = pd.DataFrame(False, index=rebalances, columns=panel.isins)
+    elig.loc[:, allowed] = True
+
+    before = band(cfg, panel, elig, rebalances, 1_000_000.0, panel.dates[-1])
+
+    tampered = copy.deepcopy(panel)
+    tampered.close[excluded] *= 1000.0
+    tampered.open[excluded] *= 1000.0
+    after = band(cfg, tampered, elig, rebalances, 1_000_000.0, panel.dates[-1])
+
+    assert np.array_equal(before.pnl, after.pnl), \
+        "an ineligible name influenced the band — it was drawn when it should not have been"

@@ -15,7 +15,7 @@ import pytest
 
 from src.backtest import reconcile, run
 from src.metrics import round_trips, total_net_pnl
-from src.noise import draw_seeds
+from src.noise import assert_engine_equivalence, band, draw_seeds
 
 CAPITAL = 1_000_000.0
 
@@ -92,12 +92,33 @@ def test_nothing_trades_between_rebalances(result, rebalances):
     assert set(result.trades["date"].unique()) <= set(rebalances)
 
 
-@pytest.mark.xfail(strict=True, reason="noise.assert_engine_equivalence blocked on B4")
-def test_batch_engine_matches_scalar_engine():
+def test_batch_engine_matches_scalar_engine(cfg, panel, rebalances, result):
     """
-    The assertion the whole noise band rests on: V0's holdings through the batch path
-    at D=1 must match backtest.run to the rupee.
+    The assertion the whole noise band rests on: a holdings map through the batch path
+    at D=1 must match backtest.run to the rupee. Without it, a divergence in plumbing
+    would masquerade as a difference in selection.
     """
-    from src.config import load
-    from src.noise import assert_engine_equivalence
-    assert_engine_equivalence(load(), pd.DataFrame(), None, {})
+    book = sorted(panel.symbols[panel.symbols != "FFF"].index)[:3]
+    assert_engine_equivalence(cfg, panel, result, {d: book for d in rebalances},
+                              CAPITAL, panel.dates[-1])
+
+
+def test_chunk_size_cannot_change_a_rupee(cfg, panel, rebalances, monkeypatch):
+    """
+    `chunk_size` is a memory knob. If it moved the PNL distribution, the band would not
+    be reproducible and every z in the ledger would depend on how the run was batched.
+
+    This is bit-exactness, not a tolerance: the engine avoids BLAS matrix products for
+    exactly this reason (see `_run_batch`).
+    """
+    monkeypatch.setitem(cfg._flat, "mandate.book_size", 3)
+    monkeypatch.setitem(cfg._flat, "noise.n_draws", 40)
+    keep = sorted(panel.symbols[panel.symbols != "FFF"].index)
+    elig = pd.DataFrame(False, index=rebalances, columns=panel.isins)
+    elig.loc[:, keep] = True
+
+    monkeypatch.setitem(cfg._flat, "noise.chunk_size", 40)
+    whole = band(cfg, panel, elig, rebalances, CAPITAL, panel.dates[-1])
+    monkeypatch.setitem(cfg._flat, "noise.chunk_size", 3)
+    chunked = band(cfg, panel, elig, rebalances, CAPITAL, panel.dates[-1])
+    assert np.array_equal(whole.pnl, chunked.pnl)

@@ -164,4 +164,4 @@ noise:
   charge_costs: true
   master_seed: 20260824
   chunk_size: 2000           # batching only; must not change results
-  significance_test: null    # PENDING D11 — level sigma vs paired null
+  significance_test: level_sigma  # D11 FROZEN — (variant - V0) / sigma of the band

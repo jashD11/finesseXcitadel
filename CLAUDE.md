@@ -158,6 +158,52 @@ a single rupee.
 requires an exact match against `backtest.run`. Without it, a divergence in plumbing would
 masquerade as a difference in selection.
 
+### Result — run 2026-08-24, seed 20260824, 10,000 draws
+
+| | PNL |
+|---|---|
+| Mean random draw | ₹2,74,71,586 |
+| Median random draw | ₹2,65,12,509 |
+| σ of the band | ₹86,05,419 (± ₹60,853) |
+| Worst / best draw | ₹64,97,424 / ₹8,05,50,575 |
+| 95th / 99th percentile | ₹4,29,39,785 / ₹5,29,45,568 |
+| **V0** | **₹8,80,13,313** |
+
+**V0 sits at the 100th percentile. Zero of 10,000 random draws beat it; +7.04σ above the
+random mean.** On the competition's own metric — Total Net PNL — this is unambiguous, and
+it is not a survivorship artefact: the random draws are sampled from the *same* as-of
+eligible set, so survivorship, concentration, costs, weighting and the calendar all cancel.
+
+Consistency check the band passes: the mean random draw (₹2.75 Cr) sits just under the
+equal-weight benchmark (₹2.85 Cr), with the median below the mean — the right-skew a
+concentrated compounding book must produce.
+
+### The same band, adjusted for the risk taken
+
+Raw PNL cannot separate *a better signal* from *a riskier one*. A concentrated momentum
+book in a bull market systematically holds higher-volatility names. So the band is also
+read on return per unit of risk (CAGR ÷ annualised volatility, both from rebalance marks):
+
+| | V0 | Random draws |
+|---|---|---|
+| Annualised volatility | **39.49%** | median 21.44%, max 31.64% |
+| Return per unit of risk | **1.47** | median 1.38, max 2.70 |
+
+**V0 is more volatile than every one of the 10,000 random draws, and on a risk-adjusted
+basis it sits at the 63rd percentile — 3,704 draws match or beat it.**
+
+**The honest reading: V0's extraordinary raw PNL is very largely the price of the risk it
+took, not evidence of selection skill.** What 12-1 momentum reliably does here is *load on
+volatility* — a real, systematic, repeatable property of the rule, and under a raw-PNL
+scoring metric a legitimate and rewarded one (§3). What it does not demonstrate is an
+ability to pick better stocks per unit of risk.
+
+Both readings go in the report. Quoting only the first would be the exact failure this
+section exists to prevent.
+
+*Caveat:* volatility is estimated from ~20 quarterly marks, so the 63rd percentile is
+indicative, not precise. The 100th-percentile PNL result does not depend on it.
+
 ---
 
 ## 6 · V1 — composite score
@@ -293,7 +339,8 @@ only** · seeds are logged for every stochastic run.
 
 | Date | ID | What changed | PNL (₹) | Δ vs V0 (₹) | z | Cleared? | 2026 | Verdict |
 |---|---|---|---|---|---|---|---|---|
-| 2026-08-24 | `V0` | Baseline. 12-1 momentum (252/21), top 10, equal weight, quarterly, whole shares, B12 cost reserve. Zero fitted parameters. | 8,80,13,313 | — | — | — | not run | **Baseline.** Reconciles to the rupee; round-trip P&L sums to Total Net PNL with zero gap. |
+| 2026-08-24 | `V0` | Baseline. 12-1 momentum (252/21), top 10, equal weight, quarterly, whole shares, B12 cost reserve. Zero fitted parameters. | 8,80,13,313 | — | +7.04 vs random mean | **100th pct** | not run | **Baseline.** Reconciles to the rupee; round-trip P&L sums to Total Net PNL with zero gap. Beats 10,000/10,000 random draws on PNL — but only the 63rd pct risk-adjusted. |
+| 2026-08-24 | `NOISE` | The band itself (§5). 10,000 draws, seed 20260824, resampled each rebalance from the as-of eligible set, same engine (asserted), costs charged. | mean 2,74,71,586 | σ = 86,05,419 | — | — | n/a | **The measuring stick.** Engine equivalence asserted; `chunk_size` bit-exact across 4 values. |
 | 2026-08-24 | `BM-ew` | Reference, not a trial: equal-weight universe, same dates, same engine, costs charged. | 2,84,90,164 | −5,95,23,149 | — | — | not run | Benchmark. V0 is +₹5.95 Cr over it — **unadjudicated until the noise band runs.** |
 | 2026-08-24 | `BM-idx` | Reference, not a trial: Nifty 100 index level, cost-free by construction. | 89,41,008 | — | — | — | not run | Benchmark. Mandate-facing comparison (guidelines §8). |
 | 2026-08-24 | `BM-ew-n100` | Attribution rung: equal-weight the Nifty-100 constituents only. Isolates **weighting** from universe. | 2,49,78,801 | — | — | — | not run | Reference. vs `BM-idx`, equal-weighting the *same 100 names* is worth **+160 pp**. Rewrote §7. |
@@ -424,21 +471,28 @@ decision is forced. `openpyxl` is absent — xlsxwriter covers writing and we ne
 Deadline **31 August 2026** (the guidelines say 31; this file previously said 30). Today
 **24 August 2026**.
 
-**Done.** Skeleton, data acquisition, the full cleaning layer, and **V0 end-to-end**.
-51 tests pass, 3 xfail-strict on unbuilt modules. Decisions A1–A16, B1–B12, C1, C2, C6,
-C7, D1–D10 are closed — 41 of 48. The repo is now a git repository with a README.
+**Done.** Skeleton, data acquisition, the full cleaning layer, **V0 end-to-end**, and
+**the noise band**. 54 tests pass, 1 xfail-strict (V1 composite). Decisions A1–A16,
+B1–B12, C1, C2, C6, C7, D1–D11 are closed — 42 of 48. The repo is a git repository with
+a README.
 
 V0: **Total Net PNL ₹8,80,13,313** (+880.1%), CAGR 57.90%, Sharpe 2.22, MDD −32.50%,
 92 round trips, ₹8.87 lakh of costs. The trade log reconciles to the NAV to within ₹1 and
 the round-trip decomposition sums to Total Net PNL with a zero-rupee gap.
 
+**The noise band's verdict (§5):** V0 beats 10,000 of 10,000 random draws on PNL, and
+sits at the 63rd percentile once risk is accounted for. Momentum here loads on volatility
+rather than picking better per unit of risk. Both go in the report.
+
 **Next, in order.**
 
-1. **The noise band (§5).** Nothing about V0's margin over the benchmark means anything
-   until this runs. It is the single highest-value item in the repo, and V0 being far
-   above the equal-weight benchmark makes it *more* urgent, not less — a large number
-   from a 10-name book is exactly what luck also produces.
-2. Then V1, then the backlog (§8) in the stated order.
+1. **Push to GitHub and write the 5–6 page report.** Both are hard checklist items still
+   at zero, and they are worth more marks than any further strategy work.
+2. **The 2026 stress run.** B8 is already decided; it is a rejection filter and takes
+   an hour.
+3. Then the backlog (§8) — but §7's attribution says the headroom is small, and the noise
+   band now says the selection term is mostly a risk premium. Semi-annual rebalance
+   (backlog #2, a one-word config change) is the cheapest remaining trial. The tree
+   ensemble (#7) is almost certainly not worth the days it costs.
 
-Still open: C3, C4, C5, C8, C9 (V1 composite), B10 (documentation), D11 (significance
-test — needed *by* the noise band).
+Still open: C3, C4, C5, C8, C9 (V1 composite), B10 (documentation only).

@@ -39,8 +39,6 @@ PENDING: dict[str, str] = {
     "composite.feature_weights": "C9",
     # Documentation-only: adjusted prices already handle the mechanics.
     "execution.corporate_action_mode": "B10",
-    # Needed only once the noise band exists.
-    "noise.significance_test": "D11",
 }
 
 # Nulls that are not decisions. Each needs a stated meaning.

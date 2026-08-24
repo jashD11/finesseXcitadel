@@ -1,8 +1,8 @@
 # Decisions
 
 Every choice where a reasonable person could have picked differently and the numbers
-would have changed. **48 decisions: 36 frozen, 1 provisional, 1 dead, 3 non-issues,
-7 still open.** They appear below as 46 entries — A5 and C6 are one question, and
+would have changed. **48 decisions: 37 frozen, 1 provisional, 1 dead, 3 non-issues,
+6 still open.** They appear below as 46 entries — A5 and C6 are one question, and
 D6/D7/D8 are three parts of one answer.
 
 Fourteen were closed on 24 Aug 2026: six answered directly, four settled by the
@@ -475,26 +475,34 @@ would bias accuracy and gain-to-loss *downwards* for a purely cosmetic reason.
 The open ones are flagged as such in the trade table, so anyone who prefers the stricter
 convention can recompute without rerunning anything.
 
-### D11 · How do we judge whether a change is real? `OPEN`
-The written rule compares a change against the spread of the whole random distribution.
-But a new version and the old one share most of their holdings, so the difference between
-them varies *less* than either one does on its own.
+### D11 · How do we judge whether a change is real? `FROZEN`
+**Against the standard deviation of the whole random distribution.**
+`z = (PNL_variant - PNL_V0) / sigma_band`.
 
-That makes the rule **conservative** — it will reject some genuine but modest
-improvements. That's the right posture for something a panel will scrutinise, but it's a
-choice, not a mathematical necessity. The alternative is a paired test that randomises
-only what actually changed.
+The known objection, stated rather than hidden: a new version and the old one share most
+of their holdings, so the difference between them varies *less* than either varies on its
+own. Measuring that small difference against the *whole* band's spread therefore sets a
+bar that is too high, and will reject some genuine but modest improvements.
+
+That is the intended posture. A panel is more impressed by a strict test we might fail
+than by a clever one that flatters us, and the alternative — a paired null that resamples
+only what changed — costs a paragraph of explanation to buy statistical power we do not
+need. We are not hunting for small effects; §7 shows only ~174 pp of V0's return sits in
+the selection term at all.
+
+The consequence is recorded in the ledger's own rules: `z` is written as a **number**,
+never as a pass/fail tick, so nobody reads a cleared threshold as stronger evidence than
+it is.
 
 ---
 
 # What's left
 
-**7 open.** Nothing on this list blocks V0.
+**6 open.** Nothing on this list blocks V0 or the noise band.
 
 | Blocks | Decisions |
 |---|---|
 | The V1 composite | C3, C4, C5, C8, C9 |
-| Judging results | D11 |
 | Documentation only | B10 |
 
 Two more are deliberately unresolved rather than open:
