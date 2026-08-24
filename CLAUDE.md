@@ -182,17 +182,48 @@ rule, kills most churn. An incumbent that becomes ineligible exits regardless of
 
 ---
 
-## 7 · The two decisions that actually move the number
+## 7 · What actually moves the number — measured, 2026-08-24
 
-**Cap tilt.** Midcap 100 roughly doubled Nifty 100's cumulative return over this window.
-Whether the book holds 3 midcaps or 8 is worth more than the choice of selection rule.
-Smallcap 100 is excluded because it carries the heaviest index-inclusion bias and adds
-little given signal quality is flat across the cap spectrum — but this is a *decision*, and
-reversible.
+This section previously named **cap tilt** and **holding period** as the two levers. The
+first claim is now measured and it is wrong: **weighting matters roughly four times more
+than the cap tilt.** Each rung below changes exactly one thing, all through the same
+engine, same dates, same costs.
 
-**Holding period.** Costs do not constrain it. The real question is whether the strategy
-harvests momentum persistence (longer holds) or reversal (shorter). Over 2021–25, holding
-winners longer generally paid. Quarterly is the starting point; semi-annual is live.
+| Step | What it adds | Total return | Attributable |
+|---|---|---|---|
+| Nifty 100 index (cap-weighted) | Being invested at all | +89.4% | **+89 pp** |
+| → equal-weight *the same 100 names* | Weighting | +249.8% | **+160 pp** |
+| → add the mid-caps (182 eligible) | Universe | +284.9% | **+36 pp** |
+| → hold only 10 names | Concentration | ~+705.8% * | **+421 pp** |
+| → pick those 10 by 12-1 momentum | Selection | +880.1% | **+174 pp** |
+
+\* Estimated by levering the equal-weight benchmark to V0's realised volatility (1.60×).
+A crude proxy — concentration is not literally leverage and there is no borrowing cost —
+so the bottom two rows are an indicative split, not a precise one.
+
+**Weighting.** Same 100 companies, same five years: **+89.4% cap-weighted vs +249.8%
+equal-weighted.** The mega-caps that dominate the index underperformed the smaller names
+*inside the same index*, so cap-weighting meant owning mostly the laggards. That one
+choice is worth more than the entire index return. V0 inherits this advantage before
+momentum picks a single stock.
+
+**Cap tilt.** Real but smaller than assumed: EW Nifty-100 +249.8% vs EW Midcap-100
++324.4%, and blending them lands at +284.9%. Worth ~36 pp, not the dominant lever.
+Smallcap 100 stays excluded — heaviest index-inclusion bias, and this is a reversible
+*decision*, not a fact.
+
+**Concentration.** The largest single term after weighting, and it is not skill: holding
+10 names instead of 182 is risk-taking. Legitimate under a raw-PNL metric (§3), but it
+must never be presented as stock-picking ability.
+
+**Holding period.** Still untested. Costs do not constrain it. The question is whether the
+strategy harvests momentum persistence (longer holds) or reversal (shorter). Quarterly is
+the V0 baseline; semi-annual and monthly are one-word config changes (B1) awaiting trials.
+
+**Consequence for the backlog.** Only ~174 pp of V0's +880% sits in the selection term
+where a better signal could help — and that residue is not yet distinguishable from luck.
+Weighting and concentration are already maxed out by V0's design, so the headroom left for
+§8's modifications is smaller than the headline number suggests.
 
 ---
 
@@ -265,6 +296,8 @@ only** · seeds are logged for every stochastic run.
 | 2026-08-24 | `V0` | Baseline. 12-1 momentum (252/21), top 10, equal weight, quarterly, whole shares, B12 cost reserve. Zero fitted parameters. | 8,80,13,313 | — | — | — | not run | **Baseline.** Reconciles to the rupee; round-trip P&L sums to Total Net PNL with zero gap. |
 | 2026-08-24 | `BM-ew` | Reference, not a trial: equal-weight universe, same dates, same engine, costs charged. | 2,84,90,164 | −5,95,23,149 | — | — | not run | Benchmark. V0 is +₹5.95 Cr over it — **unadjudicated until the noise band runs.** |
 | 2026-08-24 | `BM-idx` | Reference, not a trial: Nifty 100 index level, cost-free by construction. | 89,41,008 | — | — | — | not run | Benchmark. Mandate-facing comparison (guidelines §8). |
+| 2026-08-24 | `BM-ew-n100` | Attribution rung: equal-weight the Nifty-100 constituents only. Isolates **weighting** from universe. | 2,49,78,801 | — | — | — | not run | Reference. vs `BM-idx`, equal-weighting the *same 100 names* is worth **+160 pp**. Rewrote §7. |
+| 2026-08-24 | `BM-ew-mid` | Attribution rung: equal-weight the Midcap-100 constituents only. Isolates the **cap tilt**. | 3,24,43,730 | — | — | — | not run | Reference. vs `BM-ew-n100`, the mid-cap tilt is worth ~75 pp — far less than weighting. |
 
 ### Pre-registered trials
 
