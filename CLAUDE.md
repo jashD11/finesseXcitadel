@@ -90,10 +90,12 @@ this repo, and both are now measured (2021-01-01 → 2025-12-31, price return):
 
 So beta accounts for roughly a third of V0's PNL against the equal-weight benchmark, not
 85%. The equal-weight number is far above the index because equal weighting tilts hard
-toward mid-caps *and* because the universe is today's membership (§10). **This does not
-mean selection skill has been demonstrated** — it means the gap is large enough that only
-the noise band (§5) can say whether it is skill or luck. That check is not optional and
-has not yet been run.
+toward mid-caps *and* because the universe is today's membership (§10).
+
+**The band has since been run (§5)** and the gap is not luck: 0 of 10,000 random 10-stock
+books matched V0. But it is also not per-unit-risk skill — V0 sits at the 63rd percentile
+there. What the selection rule reliably does is load on volatility. §7 carries the full
+attribution.
 
 **Costs are close to irrelevant.** Measured on V0: gross turnover is **3.77× a year**
 (both sides, and V0 resets all ten weights every quarter with no rank buffer), which at 10
@@ -239,13 +241,19 @@ engine, same dates, same costs.
 |---|---|---|---|
 | Nifty 100 index (cap-weighted) | Being invested at all | +89.4% | **+89 pp** |
 | → equal-weight *the same 100 names* | Weighting | +249.8% | **+160 pp** |
-| → add the mid-caps (182 eligible) | Universe | +284.9% | **+36 pp** |
-| → hold only 10 names | Concentration | ~+705.8% * | **+421 pp** |
-| → pick those 10 by 12-1 momentum | Selection | +880.1% | **+174 pp** |
+| → add the mid-caps (182 eligible) | Universe | +284.9% | **+35 pp** |
+| → hold 10 names **at random** | Concentration | +265.1% (median of 10,000) | **−20 pp** |
+| → pick those 10 by 12-1 momentum | Selection | +880.1% | **+615 pp** |
 
-\* Estimated by levering the equal-weight benchmark to V0's realised volatility (1.60×).
-A crude proxy — concentration is not literally leverage and there is no borrowing cost —
-so the bottom two rows are an indicative split, not a precise one.
+**Corrected 2026-08-25.** The bottom two rows previously read *+421 pp concentration /
++174 pp selection*, from levering the equal-weight benchmark 1.60× to match V0's
+volatility and compounding it. That proxy was wrong: **concentration is not leverage.**
+Holding 10 names instead of 182 multiplies *idiosyncratic* risk; it does not multiply
+market exposure per rupee, which is what levering does. The proxy answered a different
+question than the row claimed, and overstated the rung by roughly 440 pp.
+
+The noise band already measures this rung directly — 10,000 portfolios that hold exactly
+10 names with no selection content — so the corrected rows are measured, not modelled.
 
 **Weighting.** Same 100 companies, same five years: **+89.4% cap-weighted vs +249.8%
 equal-weighted.** The mega-caps that dominate the index underperformed the smaller names
@@ -254,22 +262,32 @@ choice is worth more than the entire index return. V0 inherits this advantage be
 momentum picks a single stock.
 
 **Cap tilt.** Real but smaller than assumed: EW Nifty-100 +249.8% vs EW Midcap-100
-+324.4%, and blending them lands at +284.9%. Worth ~36 pp, not the dominant lever.
++324.4%, and blending them lands at +284.9%. Worth ~35 pp, not the dominant lever.
 Smallcap 100 stays excluded — heaviest index-inclusion bias, and this is a reversible
 *decision*, not a fact.
 
-**Concentration.** The largest single term after weighting, and it is not skill: holding
-10 names instead of 182 is risk-taking. Legitimate under a raw-PNL metric (§3), but it
-must never be presented as stock-picking ability.
+**Concentration.** Measured directly off the band, it contributes **roughly nothing to
+expected return** — the median random 10-stock book returned +265.1% against the
+equal-weight universe's +284.9%, i.e. −20 pp, and the mean −10 pp. What concentration does
+is widen the *range*: the 5th-to-95th percentile of those random books spans **+155.0% to
++429.4%**. It buys dispersion, not expected return.
+
+**Selection is the dominant term after all, at +615 pp** — but read it with §5. Momentum
+does not pick better names *per unit of risk* (63rd percentile there); it systematically
+picks the **high-volatility** names, which in a rising market pays. The distinction that
+matters: *how many* names you hold (no effect) is not the same as *which* names the rule
+selects (large effect, largely a volatility loading).
 
 **Holding period.** Still untested. Costs do not constrain it. The question is whether the
 strategy harvests momentum persistence (longer holds) or reversal (shorter). Quarterly is
 the V0 baseline; semi-annual and monthly are one-word config changes (B1) awaiting trials.
 
-**Consequence for the backlog.** Only ~174 pp of V0's +880% sits in the selection term
-where a better signal could help — and that residue is not yet distinguishable from luck.
-Weighting and concentration are already maxed out by V0's design, so the headroom left for
-§8's modifications is smaller than the headline number suggests.
+**Consequence for the backlog.** The selection term is **+615 pp**, not the ~174 pp this
+section claimed before the correction — so the signal matters far more than we had
+concluded, and §5 confirms it is not luck (0 of 10,000 random draws matched it). What §5
+*also* says is that most of that 615 pp is a volatility loading rather than per-unit-risk
+skill. A different signal therefore has real room to move the number; whether any of §8's
+candidates actually does is untested, and each still has to clear one band σ (₹86,05,419).
 
 ---
 

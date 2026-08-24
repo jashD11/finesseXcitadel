@@ -139,12 +139,19 @@ below changes exactly **one** thing, run through the same engine, same dates, sa
 |---|---|---|---|
 | Nifty 100 index | being invested at all | +89.4% | **+89 pp** |
 | → equal-weight *the same 100 names* | weighting | +249.8% | **+160 pp** |
-| → add the mid-caps | universe | +284.9% | **+36 pp** |
-| → hold only 10 names | concentration | ~+706% * | **+421 pp** |
-| → pick those 10 by momentum | **selection** | +880.1% | **+174 pp** |
+| → add the mid-caps | universe | +284.9% | **+35 pp** |
+| → hold 10 names **at random** | concentration | +265.1% | **−20 pp** |
+| → pick those 10 by momentum | **selection** | +880.1% | **+615 pp** |
 
-\* Estimated by levering the equal-weight benchmark to V0's realised volatility (1.60×).
-A crude proxy, so treat the bottom two rows as indicative.
+The fourth row is the *median* of 10,000 randomly-chosen 10-stock portfolios (Section 6),
+so the bottom two rungs are measured rather than modelled.
+
+> **Correction, 25 Aug 2026.** These two rows previously read *+421 pp concentration /
+> +174 pp selection*. That came from levering the equal-weight benchmark 1.60× to match
+> V0's volatility — which answers a different question, because **concentration is not
+> leverage**. Holding 10 names rather than 182 multiplies your idiosyncratic risk; it does
+> not multiply your market exposure per rupee. The old proxy overstated the concentration
+> rung by roughly 440 pp and understated selection by the same amount.
 
 **The finding that surprised us: same 100 companies, +89.4% cap-weighted versus +249.8%
 equal-weighted.** The mega-caps that dominate the Nifty 100 underperformed the smaller
@@ -152,9 +159,14 @@ names *inside the same index*, so cap-weighting meant owning mostly the laggards
 choice is worth more than the entire index return — and roughly **4× more than the
 large-vs-mid tilt** we had assumed was the dominant lever.
 
-**Implication:** of the +880%, most is weighting and concentration. Only about **174pp**
-sits in the term where stock selection could live. V0 inherits the weighting and universe
-advantages before momentum ranks a single name.
+**The second finding: concentration does not raise expected return.** Holding 10 names
+instead of 182 gave a *median* of +265.1% against the benchmark's +284.9% — very slightly
+*worse*. What it does is widen the range: those 10,000 random books span **+155% to +429%**
+between the 5th and 95th percentiles. Concentration buys dispersion, not expected return.
+
+**Implication:** weighting is worth +160pp and comes free with the design. The selection
+rule itself is worth **+615pp** — the dominant term. Section 7 then asks the harder
+question of *why* it is worth that much, and the answer is not flattering.
 
 ---
 
@@ -274,8 +286,9 @@ Citadel panel screens for.
 
 1. The strategy beat chance on money, decisively — 10,000/10,000 in the main window, 98th
    percentile out-of-sample.
-2. Most of the headline +880% is *not* stock-picking: it is equal weighting (+160pp),
-   universe (+36pp) and concentration (+421pp).
+2. The selection rule is the dominant term (+615pp vs a random 10-stock book), with
+   equal weighting worth a further +160pp and the mid-cap universe +35pp. Concentration
+   itself adds nothing to expected return — it only widens the range of outcomes.
 3. The rule systematically loads on volatility and beta. Real, repeatable, and rewarded
    under this scoring metric.
 4. It survived out-of-sample, which is the one result that would have killed it.
