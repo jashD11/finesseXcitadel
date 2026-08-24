@@ -1,0 +1,167 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Finesse x Citadel Portfolio Challenge — single source of every parameter.
+#
+# RULE: no number lives anywhere else in this repo. If a value is not here, the
+# code that wants it is wrong.
+#
+# A key set to `null` is an UNRESOLVED DESIGN DECISION. Reading it raises
+# UnresolvedDecision naming the pending item, so an unanswered decision fails
+# loudly instead of silently running on a default. See DECISIONS.md.
+# ─────────────────────────────────────────────────────────────────────────────
+
+meta:
+  docs: CLAUDE.md            # mandate, working rules, strategy, trial ledger
+  ledger: DECISIONS.md       # the decision register
+
+paths:
+  data_raw: data/raw
+  data_clean: data/clean
+  reports: data/reports
+  output: output
+
+# ── V0 artefacts (CSV, not Excel — see DECISIONS.md "Deliverable shape") ─────
+output:
+  nav: nav.csv
+  trades: trades.csv
+  holdings: holdings.csv
+  weights: weights.csv
+  metrics: metrics.csv
+  benchmarks: benchmarks.csv
+
+# ── Mandate (CLAUDE.md §1) — spec, not decisions. Do not change. ─────────────
+mandate:
+  capital: 10000000          # ₹1,00,00,000
+  book_size: 10              # maximum stocks
+  cost_bps: 10               # 0.1% per transaction
+  start: 2021-01-01
+  end: 2025-12-31
+  stress_start: 2026-01-01   # B8 FROZEN — fresh restart, standalone
+  stress_end: 2026-06-30
+
+# ── Universe ─────────────────────────────────────────────────────────────────
+universe:
+  # A3 FROZEN — today's NSE constituent lists, frozen at fetch time.
+  nifty100_url: https://nsearchives.nseindia.com/content/indices/ind_nifty100list.csv
+  midcap100_url: https://nsearchives.nseindia.com/content/indices/ind_niftymidcap100list.csv
+  expected_per_list: 100
+  expected_total: 200        # A4 verified: lists are disjoint
+  yahoo_suffix: .NS
+  identity_key: isin         # A7 FROZEN — ISIN internally; ticker for display/fetch
+
+# ── Fetch ────────────────────────────────────────────────────────────────────
+fetch:
+  source: yahoo              # A1 FROZEN
+  start: 2019-06-01          # A15 FROZEN — full 252d lookback before Jan 2021 + buffer
+  end: null                  # null here means "run date"; not a pending decision
+  indices:                   # NIFTY_MIDCAP_100.NS deliberately excluded — measured unreliable
+    - ^NSEI
+    - ^CNX100
+  batch_size: 25
+  request_pause_s: 1.0
+  max_retries: 3
+  user_agent: >-
+    Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+    (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+
+# ── Prices ───────────────────────────────────────────────────────────────────
+prices:
+  return_basis: price        # A2 FROZEN — price return; dividends ignored entirely
+  price_field: close         # A2 FROZEN — `Close`, never `Adj Close`
+  execution_field: open      # B2 FROZEN — fill at the open of t
+
+# ── Cleaning ─────────────────────────────────────────────────────────────────
+clean:
+  # A8 FROZEN — union of days any name printed, minus days on which no name in the
+  # universe had volume. Removes 4 phantom holiday bars (all inside the 2026 stress
+  # window) while keeping 2 genuine Muhurat sessions. Expect 1,787 days.
+  trading_calendar: volume_filtered_union
+  ffill_max_days: 5          # A9 FROZEN — forward only, asserted. Currently fires 0 times.
+  zero_volume_policy: not_tradeable_prev_day   # A10 FROZEN — screened on t-1 volume
+  stale_price_n: 10          # A11 FROZEN — report-only; catches PATANJALI's 52-day run
+  bad_tick_abs_return: 0.20  # A12 FROZEN — flag for review, NEVER auto-correct
+  liquidity_floor: 0         # A13 FROZEN — 0 means no floor; thinnest name is 33x a position
+  cache_immutable: true      # A14 — snapshots are as-of pinned and never overwritten
+  # A16 FROZEN — verified corporate actions Yahoo did not adjust. Evidence-carrying:
+  # a row is applied only when an external record confirms it.
+  corporate_action_overrides: data/corporate_actions_overrides.csv
+
+# ── Eligibility ──────────────────────────────────────────────────────────────
+eligibility:
+  # A5 / C6 FROZEN — full feature window required; a name is ineligible until it has
+  # the complete lookback. Measured minimum eligible count is 174, so book_size is
+  # never constrained (B9 asserted, not implemented).
+  require_full_window: true
+  min_eligible: 10           # assertion floor, not a fallback rule
+
+# ── Signal ───────────────────────────────────────────────────────────────────
+signal:
+  lookback_unit: trading_days # C2 FROZEN — native unit of the A8 calendar
+  lookback: 252              # C2 FROZEN — one year of trading days
+  skip: 21                   # C2 FROZEN — skip the most recent month
+  return_type: simple        # C1 FROZEN — ranking identical under log (monotonic)
+  formation_lag_days: 1      # B2 FROZEN — signal through close of t-1
+
+# ── Composite (V1) ───────────────────────────────────────────────────────────
+composite:
+  zscore_population: null    # PENDING C3  — pooled vs within-index
+  winsor_z: null             # PENDING C4  — clip threshold, post-z
+  missing_feature_policy: null  # PENDING C5
+  reversal_sign: null        # PENDING C8  — momentum or reversal reading
+  feature_weights: null      # PENDING C9
+  buffer_enter_rank: 10      # CLAUDE.md §6
+  buffer_exit_rank: 20       # CLAUDE.md §6
+
+# ── Selection ────────────────────────────────────────────────────────────────
+selection:
+  tie_break: incumbent_then_isin  # C7 FROZEN — hysteresis, then the stable id (A7)
+
+# ── Execution / accounting ───────────────────────────────────────────────────
+execution:
+  # B1 FROZEN — quarterly for V0. Frequency is a config word, not a code path:
+  # other cadences (backlog #2) are a one-word change, each its own ledger trial.
+  rebalance_calendar: quarterly_first_trading_day
+  share_granularity: whole   # B4 FROZEN — NSE has no fractional shares
+  cash_residue: hold_uninvested  # B5 FROZEN — explicit NAV line, earns nothing
+  charge_initial_build: true # B6 FROZEN — the opening build is a real transaction
+  # B12 FROZEN — the book is sized on value less a cost reserve, so the 10 bps can
+  # always be paid. Worst-case gross turnover is a full replacement: sell the whole
+  # book and buy a new one, hence 2x the book value.
+  cost_reserve: worst_case_gross_turnover
+  cost_reserve_multiple: 2
+  nav_start_convention: capital_at_first_rebalance_open  # B7 FROZEN
+  corporate_action_mode: null # PENDING B10 — implicit via adjusted prices, documented
+
+weighting:
+  target: equal              # CLAUDE.md §4 — 1/10
+  reset_to_target: true      # B3 PROVISIONAL — see DECISIONS.md; trial B3-drift in CLAUDE.md §11
+
+# ── Metrics ──────────────────────────────────────────────────────────────────
+metrics:
+  trade_basis: round_trip    # D6/D7/D8 FROZEN
+  dual_report: true          # D6/D7/D8 FROZEN
+  annualisation: cagr        # D3 FROZEN — guidelines §7 "geometric average return"
+  sharpe_ddof: 1             # D4 FROZEN — sample std
+  trading_days_per_year: 252 # D4 FROZEN — Sharpe annualisation factor
+  calendar_days_per_year: 365.25  # D3 FROZEN — CAGR elapsed-years divisor
+  risk_free: 0.0             # CLAUDE.md §1
+  mdd_basis: daily_nav       # D5 FROZEN — guidelines §7 "portfolio value"
+  open_roundtrip_policy: mark_to_market_closed  # D10 FROZEN
+
+# ── Benchmark ────────────────────────────────────────────────────────────────
+benchmark:
+  # D1 FROZEN — the EW universe separates stock-picking from cap tilt; the index
+  # is the mandate-facing comparison (guidelines §8). Nifty 500 is not in the snapshot.
+  set: [equal_weight_universe, nifty100_index]
+  charge_costs: equal_weight_only  # D9 FROZEN — index series is cost-free by construction
+
+# ── Noise band (CLAUDE.md §5) ────────────────────────────────────────────────
+noise:
+  # D2 FROZEN
+  n_draws: 10000
+  rebalanced: true           # resample at every rebalance date
+  replacement: false
+  sampling_frame: as_of_eligible
+  charge_costs: true
+  master_seed: 20260824
+  chunk_size: 2000           # batching only; must not change results
+  significance_test: null    # PENDING D11 — level sigma vs paired null

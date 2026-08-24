@@ -1,0 +1,11 @@
+# Pinned data snapshots — large, and regenerable by scripts/01_fetch.py + 02_clean.py.
+# They are immutable once written (A14), so they are reproducible but not committed.
+data/raw/*.parquet
+data/clean/*.parquet
+
+# Generated artefacts
+output/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
