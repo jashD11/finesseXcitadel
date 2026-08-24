@@ -201,8 +201,12 @@ shareholders received shares in the spun-off company instead. Adjusting for that
 ratio NSE doesn't publish, and inventing one would be making up a number. Both are
 flagged and disclosed.
 
-> **Open risk for Phase 2:** if the book ever holds TMPV or VEDL through those dates,
-> the portfolio takes a loss the real holder didn't suffer. Not yet decided.
+> **Open risk, now measured (2026-08-24):** if the book ever held TMPV or VEDL through
+> those dates it would take a loss the real holder didn't suffer. Checked against every
+> book V0 actually held: **TMPV appears once, in Q2 2021** — four years before its Oct-2025
+> demerger — and **VEDL never**. The stress-window book holds neither, nor TRENT. So the
+> risk did not materialise for V0. It is *not* closed in general: any future variant that
+> holds either name across those dates must re-run this check.
 
 ---
 

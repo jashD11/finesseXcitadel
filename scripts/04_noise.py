@@ -12,6 +12,7 @@ at all. Then every later change is scored as (PNL_variant - PNL_V0) / sigma (D11
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -30,13 +31,20 @@ AS_OF = "2026-08-24"
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--window", choices=("main", "stress"), default="main")
+    args = ap.parse_args()
+    tag = "" if args.window == "main" else "_stress"
+
     cfg = load()
     v0_module = import_module("03_v0")
+    start_key, end_key = v0_module.WINDOWS[args.window]
 
     panel = clean.load_panel(cfg, clean.panel_path(cfg, AS_OF),
                              clean.universe_path(cfg, AS_OF))
     capital = float(cfg["mandate.capital"])
-    start, end = pd.Timestamp(cfg["mandate.start"]), pd.Timestamp(cfg["mandate.end"])
+    start, end = pd.Timestamp(cfg[start_key]), pd.Timestamp(cfg[end_key])
+    print(f"[noise] window '{args.window}': {start.date()} -> {end.date()}")
 
     dates = calendar.rebalance_dates(cfg, panel.dates, start, end)
     eligibility = universe.eligibility_matrix(cfg, panel, dates)
@@ -79,6 +87,13 @@ def main() -> int:
     # in a bull market is systematically more volatile than a random one, so raw PNL
     # alone cannot separate a better signal from a riskier one.
     years = metrics.elapsed_years(cfg, v0)
+    min_marks = 8
+    if band.marks.shape[0] - 1 < min_marks:
+        print(f"\n  --- risk view skipped: {band.marks.shape[0]-1} rebalance marks, "
+              f"fewer than {min_marks}. A volatility estimated from that few points "
+              f"is not worth reporting. ---")
+        _save(cfg, band, pnl, v0_pnl, percentile, z, tag, risk=None)
+        return 0
     rar = band.return_per_unit_risk(years)
     v0_marks = np.array([capital]
                         + [float((v0.holdings.loc[dates[i - 1]].to_numpy()
@@ -104,25 +119,32 @@ def main() -> int:
           f"({int((rar >= v0_rar).sum()):,} of {band.n_draws:,} match or beat it)")
     print("  NOTE: volatility from ~20 quarterly marks — indicative, not precise.")
 
+    _save(cfg, band, pnl, v0_pnl, percentile, z, tag,
+          risk={"v0_volatility": v0_vol,
+                "random_volatility_median": float(np.median(rand_vol)),
+                "random_volatility_max": float(rand_vol.max()),
+                "v0_return_per_unit_risk": v0_rar,
+                "random_return_per_unit_risk_median": float(np.median(rar)),
+                "v0_risk_adjusted_percentile": rar_pct,
+                "draws_matching_v0_risk_adjusted": int((rar >= v0_rar).sum())})
+    return 0
+
+
+def _save(cfg, band, pnl, v0_pnl, percentile, z, tag, risk):
     out = cfg.resolved_path("paths.output")
     out.mkdir(parents=True, exist_ok=True)
-    pd.Series(pnl, name="pnl").to_csv(out / "noise_band.csv", index=False)
-    pd.Series({
+    summary = {
         "n_draws": band.n_draws, "master_seed": band.master_seed,
         "mean": pnl.mean(), "median": float(np.median(pnl)),
         "sigma": band.sigma, "sigma_stderr": band.sigma_stderr,
         "min": pnl.min(), "max": pnl.max(),
         "v0_pnl": v0_pnl, "v0_percentile": percentile, "v0_z_vs_mean": z,
         "draws_beating_v0": int((pnl >= v0_pnl).sum()),
-        "v0_volatility": v0_vol, "random_volatility_median": float(np.median(rand_vol)),
-        "random_volatility_max": float(rand_vol.max()),
-        "v0_return_per_unit_risk": v0_rar,
-        "random_return_per_unit_risk_median": float(np.median(rar)),
-        "v0_risk_adjusted_percentile": rar_pct,
-        "draws_matching_v0_risk_adjusted": int((rar >= v0_rar).sum()),
-    }, name="value").to_csv(out / "noise_summary.csv")
-    print(f"\n[noise] artefacts -> {out}/noise_band.csv, noise_summary.csv")
-    return 0
+    }
+    summary.update(risk or {})
+    pd.Series(pnl, name="pnl").to_csv(out / f"noise_band{tag}.csv", index=False)
+    pd.Series(summary, name="value").to_csv(out / f"noise_summary{tag}.csv")
+    print(f"\n[noise] artefacts -> {out}/noise_band{tag}.csv, noise_summary{tag}.csv")
 
 
 if __name__ == "__main__":

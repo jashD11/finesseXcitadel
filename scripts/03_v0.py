@@ -12,6 +12,7 @@ page report, and Excel appears nowhere in them.
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -23,6 +24,19 @@ from src import backtest, calendar, clean, features, metrics, select, universe  
 from src.config import load  # noqa: E402
 
 AS_OF = "2026-08-24"
+
+# B8 (frozen): the stress window is a *separate* backtest that restarts with the full
+# capital on the first trading day of 2026. Nothing carries over from 2021-25 — no
+# holdings, no cash, no drifted weights. §9: it is a rejection filter, never a selection
+# criterion, so no parameter may ever be chosen by looking at it.
+WINDOWS = {"main": ("mandate.start", "mandate.end"),
+           "stress": ("mandate.stress_start", "mandate.stress_end")}
+
+
+def _tagged(name: str, tag: str) -> str:
+    """`nav.csv` -> `nav_stress.csv`, so a stress run never overwrites the scored one."""
+    stem, _, ext = name.rpartition(".")
+    return f"{stem}{tag}.{ext}"
 
 
 def build_holdings(cfg, panel, dates) -> dict[pd.Timestamp, list[str]]:
@@ -48,6 +62,14 @@ def build_holdings(cfg, panel, dates) -> dict[pd.Timestamp, list[str]]:
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--window", choices=sorted(WINDOWS), default="main",
+                    help="main = 2021-25 (scored); stress = Jan-Jun 2026 (B8, rejection "
+                         "filter only)")
+    args = ap.parse_args()
+    start_key, end_key = WINDOWS[args.window]
+    tag = "" if args.window == "main" else "_stress"
+
     cfg = load()
     pending = cfg.pending()
     print(f"[v0] config OK — {len(pending)} decisions still open "
@@ -56,8 +78,9 @@ def main() -> int:
     panel = clean.load_panel(cfg, clean.panel_path(cfg, AS_OF),
                              clean.universe_path(cfg, AS_OF))
     capital = float(cfg["mandate.capital"])
-    start = pd.Timestamp(cfg["mandate.start"])
-    end = pd.Timestamp(cfg["mandate.end"])
+    start = pd.Timestamp(cfg[start_key])
+    end = pd.Timestamp(cfg[end_key])
+    print(f"[v0] window '{args.window}': {start.date()} -> {end.date()}")
     print(f"[v0] panel {panel.close.shape[0]} days x {panel.close.shape[1]} names")
 
     dates = calendar.rebalance_dates(cfg, panel.dates, start, end)
@@ -110,13 +133,13 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     result.nav.rename("nav").to_frame().join(
         result.cash.rename("cash")).join(
-        result.costs.rename("costs")).to_csv(out / cfg["output.nav"])
-    result.trades.to_csv(out / cfg["output.trades"], index=False)
-    result.holdings.to_csv(out / cfg["output.holdings"])
-    result.weights.to_csv(out / cfg["output.weights"])
-    benchmarks.to_csv(out / cfg["output.benchmarks"])
-    pd.Series(summary).rename("value").to_csv(out / cfg["output.metrics"])
-    trips.to_csv(out / "round_trips.csv", index=False)
+        result.costs.rename("costs")).to_csv(out / _tagged(cfg["output.nav"], tag))
+    result.trades.to_csv(out / _tagged(cfg["output.trades"], tag), index=False)
+    result.holdings.to_csv(out / _tagged(cfg["output.holdings"], tag))
+    result.weights.to_csv(out / _tagged(cfg["output.weights"], tag))
+    benchmarks.to_csv(out / _tagged(cfg["output.benchmarks"], tag))
+    pd.Series(summary).rename("value").to_csv(out / _tagged(cfg["output.metrics"], tag))
+    trips.to_csv(out / _tagged("round_trips.csv", tag), index=False)
 
     print()
     print(f"  Total Net PNL       Rs {pnl:>18,.0f}   ({summary['total_return']*100:>7.1f}%)")

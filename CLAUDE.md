@@ -303,6 +303,40 @@ out-of-sample in any meaningful sense.
 rejection filter — if a candidate collapses there, drop it. Never go back and pick the
 config that scores *highest* on 2026.
 
+### V0's stress result — run 2026-08-24
+
+Fresh ₹1 crore on 2026-01-01, two rebalances, nothing carried over (B8).
+
+| | H1 2026 |
+|---|---|
+| **V0** | **+15.48%** (₹15,47,867) |
+| Equal-weight universe | +0.20% |
+| Nifty 100 index | −6.65% |
+| V0 max drawdown | −10.69% (vs equal-weight −13.51%) |
+| Noise band, 10,000 draws | median −₹12,584, σ ₹6,90,288 |
+| **V0's percentile** | **98.15%** — 185 of 10,000 draws beat it, +2.22σ |
+
+**Verdict: passes the filter. It did not collapse.** Nothing here was or may be used to
+choose a parameter.
+
+**And it complicates §5's reading, honestly.** The 2021–25 band said V0's edge looked like
+a risk premium — mid-pack per unit of risk. If that were the whole story, a flat-to-down
+market should have hurt it: V0's beta to the equal-weight universe is **1.27** here
+(**1.31** over 2021–25 — the loading is stable and real). Beta alone would have predicted
+roughly **+0.25%** against the benchmark's +0.20%. V0 returned **+15.48%**, at a shallower
+drawdown than the benchmark.
+
+So in this window the return is *not* explained by the volatility loading. That is evidence
+for genuine selection content that §5's risk view did not detect.
+
+**Weigh it accordingly:** six months, two rebalance dates, one market regime, and 185
+draws did beat it. It is one observation, not a refutation of §5 — and §9 forbids
+promoting it into a selection criterion. Both results go in the report, with the tension
+between them stated rather than resolved.
+
+**A16's open risk is closed for this run:** the stress book held none of VEDL, TMPV or
+TRENT, so no uncorrected corporate action touched it.
+
 Same data, opposite epistemics: rejecting fragile candidates is robustness work; selecting
 for the best 2026 number is fitting the test set. The second is what a Citadel panel is
 screening for.
@@ -341,6 +375,8 @@ only** · seeds are logged for every stochastic run.
 |---|---|---|---|---|---|---|---|---|
 | 2026-08-24 | `V0` | Baseline. 12-1 momentum (252/21), top 10, equal weight, quarterly, whole shares, B12 cost reserve. Zero fitted parameters. | 8,80,13,313 | — | +7.04 vs random mean | **100th pct** | not run | **Baseline.** Reconciles to the rupee; round-trip P&L sums to Total Net PNL with zero gap. Beats 10,000/10,000 random draws on PNL — but only the 63rd pct risk-adjusted. |
 | 2026-08-24 | `NOISE` | The band itself (§5). 10,000 draws, seed 20260824, resampled each rebalance from the as-of eligible set, same engine (asserted), costs charged. | mean 2,74,71,586 | σ = 86,05,419 | — | — | n/a | **The measuring stick.** Engine equivalence asserted; `chunk_size` bit-exact across 4 values. |
+| 2026-08-24 | `V0-2026` | Same model, B8 restart on the stress window. **Not a trial** — a rejection filter (§9). Nothing tuned on it, ever. | 15,47,867 | — | +2.22 vs random mean | **98.15th pct** | **pass** | Did not collapse. Beat EW (+0.20%) and Nifty 100 (−6.65%) with a shallower drawdown. Held no A16-flagged name. |
+| 2026-08-24 | `NOISE-2026` | The band re-run on the stress window, same seed. Risk view suppressed — 2 marks is too few to estimate volatility. | median −12,584 | σ = 6,90,288 | — | — | n/a | Reference. The random 10-stock book made **nothing** in H1 2026, which is what makes V0's +15.5% informative. |
 | 2026-08-24 | `BM-ew` | Reference, not a trial: equal-weight universe, same dates, same engine, costs charged. | 2,84,90,164 | −5,95,23,149 | — | — | not run | Benchmark. V0 is +₹5.95 Cr over it — **unadjudicated until the noise band runs.** |
 | 2026-08-24 | `BM-idx` | Reference, not a trial: Nifty 100 index level, cost-free by construction. | 89,41,008 | — | — | — | not run | Benchmark. Mandate-facing comparison (guidelines §8). |
 | 2026-08-24 | `BM-ew-n100` | Attribution rung: equal-weight the Nifty-100 constituents only. Isolates **weighting** from universe. | 2,49,78,801 | — | — | — | not run | Reference. vs `BM-idx`, equal-weighting the *same 100 names* is worth **+160 pp**. Rewrote §7. |
@@ -480,19 +516,21 @@ V0: **Total Net PNL ₹8,80,13,313** (+880.1%), CAGR 57.90%, Sharpe 2.22, MDD �
 92 round trips, ₹8.87 lakh of costs. The trade log reconciles to the NAV to within ₹1 and
 the round-trip decomposition sums to Total Net PNL with a zero-rupee gap.
 
-**The noise band's verdict (§5):** V0 beats 10,000 of 10,000 random draws on PNL, and
-sits at the 63rd percentile once risk is accounted for. Momentum here loads on volatility
-rather than picking better per unit of risk. Both go in the report.
+**The noise band's verdict (§5):** V0 beats 10,000 of 10,000 random draws on PNL, but
+sits at the 63rd percentile once risk is accounted for — over 2021–25 the edge reads as a
+volatility loading, not stock-picking.
+
+**The stress window disagrees (§9):** in a flat-to-down H1 2026, V0 returned +15.48% at
+the 98th percentile of a fresh band, where the median random book made nothing and beta
+alone predicted +0.25%. Two honest readings of the same strategy, in tension. Both go in
+the report; neither gets resolved by picking the flattering one.
 
 **Next, in order.**
 
 1. **Push to GitHub and write the 5–6 page report.** Both are hard checklist items still
-   at zero, and they are worth more marks than any further strategy work.
-2. **The 2026 stress run.** B8 is already decided; it is a rejection filter and takes
-   an hour.
-3. Then the backlog (§8) — but §7's attribution says the headroom is small, and the noise
-   band now says the selection term is mostly a risk premium. Semi-annual rebalance
-   (backlog #2, a one-word config change) is the cheapest remaining trial. The tree
-   ensemble (#7) is almost certainly not worth the days it costs.
+   at zero, and they are worth more marks than any further strategy work. The §5/§9
+   tension is the report's most interesting section.
+2. Then the backlog (§8), cheapest first — semi-annual rebalance (#2) is a one-word config
+   change. The tree ensemble (#7) is almost certainly not worth the days it costs.
 
 Still open: C3, C4, C5, C8, C9 (V1 composite), B10 (documentation only).
