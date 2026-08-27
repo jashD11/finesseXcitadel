@@ -7,10 +7,42 @@ answer everywhere. Both rules it needs are still open.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 
 from src.config import Config
-from src.decisions import ConfigError, blocked
+from src.decisions import ConfigError
+
+
+def overridden_days(cfg: Config) -> pd.DatetimeIndex:
+    """
+    A8 rider: days excluded by hand because the volume filter cannot see them.
+
+    A8 drops a day only when *no* name in the universe traded. A stale Yahoo bar where two
+    names printed volume and 191 closes simply repeat the previous session clears that bar
+    and is not a trading day either. Those are listed explicitly, with the evidence in the
+    file, rather than by loosening A8 into a fitted participation threshold — see
+    `DECISIONS.md` A8.
+
+    Evidence-carrying like the corporate-action overrides: a row is excluded only when
+    ``applied`` is true, so a suspected day can be recorded without acting on it.
+    """
+    path = Path(cfg["clean.phantom_day_overrides"])
+    if not path.exists():
+        raise ConfigError(
+            f"phantom-day override file {path} is missing; A8's rider names it. "
+            f"An empty file with a header is how you say 'no overrides'."
+        )
+    frame = pd.read_csv(path)
+    required = {"date", "reason", "evidence", "applied"}
+    missing = required - set(frame.columns)
+    if missing:
+        raise ConfigError(f"{path} is missing columns {sorted(missing)}")
+    if frame.empty:
+        return pd.DatetimeIndex([])
+    active = frame[frame["applied"].astype(bool)]
+    return pd.DatetimeIndex(sorted(pd.to_datetime(active["date"])))
 
 
 def trading_days(cfg: Config, prices: pd.DataFrame) -> pd.DatetimeIndex:
@@ -36,28 +68,51 @@ def trading_days(cfg: Config, prices: pd.DataFrame) -> pd.DatetimeIndex:
         )
     traded = prices.groupby("date")["volume"].max()
     days = pd.DatetimeIndex(sorted(traded[traded > 0].index))
+    days = days.difference(overridden_days(cfg))
     assert len(days), "no trading days survived the volume filter"
     assert days.is_monotonic_increasing and days.is_unique
     return days
 
 
-def phantom_days(prices: pd.DataFrame) -> pd.DatetimeIndex:
-    """Days excluded by A8: a price printed, but not one name in the universe traded."""
+def phantom_days(cfg: Config, prices: pd.DataFrame) -> pd.DatetimeIndex:
+    """
+    Every day excluded from the calendar, from both A8 routes.
+
+    Reported as one series because that is what a reader wants; `quality_report` splits
+    them back out by route, since "no name traded" and "hand-excluded on evidence" are
+    very different claims and blending them would hide the second.
+    """
     traded = prices.groupby("date")["volume"].max()
-    return pd.DatetimeIndex(sorted(traded[traded == 0].index))
+    zero_volume = pd.DatetimeIndex(sorted(traded[traded == 0].index))
+    return zero_volume.union(overridden_days(cfg))
 
 
-# B1 (frozen): the frequency is a config word, not a code path. CLAUDE.md §7 puts
-# holding period among the two levers that actually move the number, so alternative
-# cadences are queued as ledger trials — and a trial must be a one-word config change,
-# or it is not comparable to V0 through the same engine.
+# B1 (amended 2026-08-27). CLAUDE.md §7 puts holding period among the levers that move
+# the number, so alternative cadences are ledger trials. B1 used to claim any cadence was
+# "a one-word config change, not a code path". That was true only for month-anchored
+# cadences: weekly and daily have no representation in an anchor-*month* map at all. The
+# dispatch now has two anchor families plus one literal, and the month family below is
+# untouched — so `quarterly` still resolves to the identical 20 dates and V0 stays the
+# baseline the ledger measures against.
 _ANCHOR_MONTHS: dict[str, tuple[int, ...]] = {
     "monthly": tuple(range(1, 13)),
     "quarterly": (1, 4, 7, 10),
     "semiannual": (1, 7),
     "annual": (1,),
 }
+_WEEK_ANCHORED = ("weekly",)
 _CALENDAR_SUFFIX = "_first_trading_day"
+
+# Named as a bare literal rather than `daily_first_trading_day`, which would be nonsense:
+# there is no anchor to be first on or after.
+_EVERY_DAY = "every_trading_day"
+
+
+def supported_calendars() -> list[str]:
+    """Every accepted value of `execution.rebalance_calendar`. Single source for the
+    error message and for the tests, so adding a cadence cannot leave either stale."""
+    anchored = tuple(_ANCHOR_MONTHS) + _WEEK_ANCHORED
+    return sorted([f + _CALENDAR_SUFFIX for f in anchored] + [_EVERY_DAY])
 
 
 def rebalance_dates(cfg: Config, days: pd.DatetimeIndex,
@@ -70,24 +125,35 @@ def rebalance_dates(cfg: Config, days: pd.DatetimeIndex,
     """
     name = str(cfg["execution.rebalance_calendar"])
     frequency = name[: -len(_CALENDAR_SUFFIX)] if name.endswith(_CALENDAR_SUFFIX) else None
-    if frequency not in _ANCHOR_MONTHS:
+    if name != _EVERY_DAY and frequency not in _ANCHOR_MONTHS and frequency not in _WEEK_ANCHORED:
         raise ConfigError(
             f"unsupported rebalance_calendar {name!r}; expected one of "
-            f"{sorted(f + _CALENDAR_SUFFIX for f in _ANCHOR_MONTHS)}"
+            f"{supported_calendars()}"
         )
 
     window = days[(days >= start) & (days <= end)]
     assert len(window), f"no trading days in [{start.date()}, {end.date()}]"
 
-    picked: list[pd.Timestamp] = []
-    for year in range(start.year, end.year + 1):
-        for month in _ANCHOR_MONTHS[frequency]:
-            anchor = pd.Timestamp(year=year, month=month, day=1)
-            after = window[window >= anchor]
-            if len(after):
-                picked.append(after[0])
-
-    out = pd.DatetimeIndex(sorted(set(picked)))
+    if name == _EVERY_DAY:
+        out = pd.DatetimeIndex(window)
+    elif frequency in _WEEK_ANCHORED:
+        # First trading day of each ISO week. ISO year-week is used rather than a plain
+        # week number because the two disagree across a year boundary, which would merge
+        # or split the turn-of-year week. Grouping preserves B1's actual load-bearing
+        # property: a holiday moves the rebalance forward, it never drops one.
+        iso = window.isocalendar()
+        keys = pd.MultiIndex.from_arrays([iso["year"], iso["week"]])
+        out = pd.DatetimeIndex(pd.Series(window, index=keys).groupby(level=[0, 1]).first())
+        out = pd.DatetimeIndex(sorted(out))
+    else:
+        picked: list[pd.Timestamp] = []
+        for year in range(start.year, end.year + 1):
+            for month in _ANCHOR_MONTHS[frequency]:
+                anchor = pd.Timestamp(year=year, month=month, day=1)
+                after = window[window >= anchor]
+                if len(after):
+                    picked.append(after[0])
+        out = pd.DatetimeIndex(sorted(set(picked)))
     assert len(out), f"no rebalance dates for {name!r} in the window"
     assert out.isin(days).all(), "a rebalance date is not a trading day"
     assert out.is_monotonic_increasing and out.is_unique

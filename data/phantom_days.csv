@@ -1,0 +1,2 @@
+date,reason,evidence,applied
+2025-03-18,stale_bar,"193 price rows but 191 closes identical to 2025-03-17; open == prior close for the same 191; median cross-sectional return exactly 0.0000%; only 2 of 193 names recorded any volume (14.3M vs a normal ~1.3bn). Next session's median move is 3.38%, i.e. two days of return in one. A8's volume filter passes it because 'at least one name traded' is satisfied by two.",true

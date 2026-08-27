@@ -44,9 +44,17 @@ universe:
   nifty100_url: https://nsearchives.nseindia.com/content/indices/ind_nifty100list.csv
   midcap100_url: https://nsearchives.nseindia.com/content/indices/ind_niftymidcap100list.csv
   expected_per_list: 100
-  expected_total: 200        # A4 verified: lists are disjoint
+  # A3 AMENDED / A17 — 200 current constituents plus 83 priced historical members.
+  # 6 more were members in-window but have no usable Yahoo series and are excluded and
+  # disclosed (CLAUDE.md §10): DHANI, GSPL, HDFC, ISEC, MINDTREE, PEL.
+  expected_total: 283        # A4 verified: the two current lists are disjoint
   yahoo_suffix: .NS
   identity_key: isin         # A7 FROZEN — ISIN internally; ticker for display/fetch
+  # A3 AMENDED 2026-08-28 / A17 — membership is point-in-time, rebuilt from NSE index
+  # review press releases and verified by rolling today's list backwards. See
+  # DECISIONS.md A3/A17 and src/membership.py.
+  press_release_dir: data/raw/press_releases
+  membership_overrides: data/membership_overrides.csv
 
 # ── Fetch ────────────────────────────────────────────────────────────────────
 fetch:
@@ -73,7 +81,8 @@ prices:
 clean:
   # A8 FROZEN — union of days any name printed, minus days on which no name in the
   # universe had volume. Removes 4 phantom holiday bars (all inside the 2026 stress
-  # window) while keeping 2 genuine Muhurat sessions. Expect 1,787 days.
+  # window) while keeping 2 genuine Muhurat sessions, minus the days listed in
+  # phantom_day_overrides below (A8 rider). Expect 1,786 days.
   trading_calendar: volume_filtered_union
   ffill_max_days: 5          # A9 FROZEN — forward only, asserted. Currently fires 0 times.
   zero_volume_policy: not_tradeable_prev_day   # A10 FROZEN — screened on t-1 volume
@@ -84,6 +93,10 @@ clean:
   # A16 FROZEN — verified corporate actions Yahoo did not adjust. Evidence-carrying:
   # a row is applied only when an external record confirms it.
   corporate_action_overrides: data/corporate_actions_overrides.csv
+  # A8 RIDER — days the volume filter keeps but that are not trading sessions. A8 drops a
+  # day only when *no* name traded; 2025-03-18 clears that bar with two. Evidence-carrying,
+  # same shape as the corporate-action overrides: a row is excluded only when applied=true.
+  phantom_day_overrides: data/phantom_days.csv
 
 # ── Eligibility ──────────────────────────────────────────────────────────────
 eligibility:
@@ -117,8 +130,10 @@ selection:
 
 # ── Execution / accounting ───────────────────────────────────────────────────
 execution:
-  # B1 FROZEN — quarterly for V0. Frequency is a config word, not a code path:
-  # other cadences (backlog #2) are a one-word change, each its own ledger trial.
+  # B1 (amended 2026-08-27) — quarterly for V0. Month-anchored cadences are a one-word
+  # change; weekly and daily needed a second dispatch family, which is why B1's original
+  # "always a config word" claim was wrong. See DECISIONS.md B1 and CLAUDE.md §11 `FREQ`.
+  # Accepted: {monthly,quarterly,semiannual,annual,weekly}_first_trading_day, every_trading_day.
   rebalance_calendar: quarterly_first_trading_day
   share_granularity: whole   # B4 FROZEN — NSE has no fractional shares
   cash_residue: hold_uninvested  # B5 FROZEN — explicit NAV line, earns nothing
@@ -129,11 +144,19 @@ execution:
   cost_reserve: worst_case_gross_turnover
   cost_reserve_multiple: 2
   nav_start_convention: capital_at_first_rebalance_open  # B7 FROZEN
-  corporate_action_mode: null # PENDING B10 — implicit via adjusted prices, documented
+  # B10 RESOLVED 2026-08-28 — `exit_at_ex_date` sells a name at the open of the ex-date
+  # of any corporate action A16 could not correct, and holds the cash to the next
+  # rebalance. `hold_through` is the old behaviour, kept so the rule is a config switch
+  # rather than an engine edit. See DECISIONS.md B10 and src/events.py.
+  corporate_action_mode: exit_at_ex_date
 
 weighting:
   target: equal              # CLAUDE.md §4 — 1/10
-  reset_to_target: true      # B3 PROVISIONAL — see DECISIONS.md; trial B3-drift in CLAUDE.md §11
+  # B3 RESOLVED 2026-08-28 — on the point-in-time universe (A3/A17) *drift* beats reset at
+  # all four cadences, reversing the 2026-08-27 finding that was measured on the old
+  # today's-constituents universe. V0 keeps `true` because V0 is the baseline every other
+  # row is measured against; the selected configuration is weekly + drift (CLAUDE.md §11).
+  reset_to_target: true
 
 # ── Metrics ──────────────────────────────────────────────────────────────────
 metrics:

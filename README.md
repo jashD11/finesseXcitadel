@@ -1,52 +1,54 @@
-# Finesse x Citadel — Round 2 Portfolio Construction Challenge
+# finesseXcitadel
 
-A systematic, long-only equity strategy over the Nifty 100 + Nifty Midcap 100 universe,
-backtested 1 Jan 2021 – 31 Dec 2025 on ₹1 crore of virtual capital with 0.1% costs per
-transaction.
+A systematic, long-only equity strategy for the Finesse × Citadel Round 2 portfolio
+construction challenge. At most 10 stocks drawn from the Nifty 100 and Nifty Midcap 100
+indices, backtested 1 Jan 2021 – 31 Dec 2025 on ₹1 crore with 0.1% transaction costs, and
+stress-tested on 1 Jan – 30 Jun 2026.
 
-**Current state: V0, the null model.** 12-1 momentum, top 10, equal weight, quarterly
-rebalance, zero fitted parameters. It exists to be a baseline, not a submission — every
-later change is measured as a delta against it.
+The universe is **point-in-time**: eligibility on any rebalance date is whichever stocks
+were actually in either index on that date, reconstructed from NSE index-review press
+releases. See [Data](#data).
 
-> **New to the repo, or reading this from a finance rather than an engineering
-> background?** Start with **[`WALKTHROUGH.md`](WALKTHROUGH.md)** — the full story of what
-> was built, what was tested and what was found, with no code required.
+Full narrative, no code required: **[`WALKTHROUGH.md`](WALKTHROUGH.md)**.
+Every design choice and its reasoning: **[`DECISIONS.md`](DECISIONS.md)**.
 
----
+## Results
 
-## Running it
+Main window, 2021–25, after costs.
 
-Requires **Python 3.12**. Dependencies: `pandas`, `numpy`, `scipy`, `yfinance`,
-`xlsxwriter`, `matplotlib`, `scikit-learn`, `pyarrow`, `PyYAML`, `pytest`, `requests`.
+| | Total Net PNL | Return | CAGR | Sharpe | Max DD |
+|---|---|---|---|---|---|
+| **Selected: weekly rebalance, drifting weights** | **₹4,85,51,143** | **+485.5%** | 42.4% | 1.64 | −30.6% |
+| V0 baseline: 12-1 momentum, quarterly, equal weight | ₹3,88,03,708 | +388.0% | 37.3% | 1.43 | −31.3% |
+| Benchmark: equal-weight universe | ₹1,51,62,127 | +151.6% | — | — | — |
+| Benchmark: Nifty 100 index | ₹89,41,008 | +89.4% | — | — | — |
+
+V0 beats 9,996 of 10,000 random 10-stock portfolios drawn from the same eligible set on
+the same dates. The configuration was selected on 2021–25 alone; the 2026 window is used
+only as a one-way rejection filter.
+
+## Requirements
+
+Python 3.12, with `pandas`, `numpy`, `scipy`, `yfinance`, `matplotlib`, `scikit-learn`,
+`pyarrow`, `PyYAML`, `pytest`, `requests`, `xlsxwriter`.
+
+## Usage
 
 ```bash
-python3 scripts/01_fetch.py     # network. writes data/raw/. re-runs make zero calls
-python3 scripts/02_clean.py     # raw -> validated panel + data quality report
-python3 scripts/03_v0.py        # the backtest. writes output/*.csv
-python3 -m pytest tests/ -q
+python3 scripts/01_fetch.py         # network. writes data/raw/. re-runs make zero calls
+python3 scripts/08_pit_universe.py  # point-in-time universe -> a new dated snapshot
+python3 scripts/02_clean.py         # raw -> validated panel + data quality report
+python3 scripts/03_v0.py            # the backtest -> output/*.csv
+python3 scripts/04_noise.py         # 10,000 random portfolios -> the significance band
+python3 scripts/07_sweep.py         # cadence x weighting grid, 8 cells (~5 min)
+python3 -m pytest tests/ -q         # 84 pass, 1 xfail-strict (the V1 composite)
 ```
 
-Steps 1 and 2 must run before step 3. `scripts/04_noise.py`, `05_v1.py` and `06_report.py`
-are not yet implemented and print the decisions still blocking them.
-
-## Data
-
-**Source:** Yahoo Finance via `yfinance`, plus NSE constituent CSVs for index membership.
-Both are pulled by `scripts/01_fetch.py`.
-
-**Not committed.** `data/raw/*.parquet` and `data/clean/*.parquet` are excluded by
-`.gitignore` — they are large, and `scripts/01_fetch.py` reproduces them. Snapshots are
-stamped with a fetch date and are **immutable**: the code refuses to overwrite one,
-because Yahoo silently revises history and an unpinned snapshot would make today's
-result unreproducible tomorrow.
-
-The committed `data/raw/universe_20260824.csv` (index membership),
-`data/corporate_actions_overrides.csv` (the evidence-carrying correction table) and
-`data/reports/` are small and are kept in the repo.
-
-**Verified:** 1,787 trading days × 200 names, no interior gaps, 3 corporate-action
-corrections applied and 2 disclosed. See `data/reports/data_quality.md`, which is
-generated, not hand-written.
+Steps 1, 8 and 2 must run before the rest, in that order. Add `--window stress` for the
+Jan–Jun 2026 run. `03_v0.py` and `04_noise.py` accept `--calendar` and `--weighting` to run
+a single grid cell, writing under `output/sweep/<cell>/` so a variant cannot overwrite the
+baseline. `05_v1.py` and `06_report.py` are not implemented and print the decisions
+blocking them.
 
 ## Layout
 
@@ -54,54 +56,80 @@ generated, not hand-written.
 config.yaml       every parameter. no number lives anywhere else in the repo
 CLAUDE.md         the mandate, the strategy, the trial ledger
 DECISIONS.md      the decision register — authoritative
+WALKTHROUGH.md    the whole project explained without code
 src/
   config.py       load + validate; refuses to run on an unresolved decision
   calendar.py     trading calendar, rebalance dates, the t-1 formation lag
   fetch.py        network only. never imported by the analysis path
   clean.py        panel construction, corporate actions, quality report
-  universe.py     as-of eligibility
+  membership.py   point-in-time index membership from NSE press releases
+  universe.py     as-of eligibility: full window, tradeable, index member
   features.py     signal computation
   select.py       ranking, buffer, tie-break
-  backtest.py     execution, costs, NAV, trades — signal-agnostic
+  events.py       forced mid-cycle exits (index exits, unmodellable ex-dates)
+  backtest.py     execution, costs, NAV, trades — signal- and weighting-agnostic
   metrics.py      round trips and every reported figure
-  noise.py        the 10,000-draw significance band   [not yet built]
-scripts/          01_fetch  02_clean  03_v0  04_noise  05_v1  06_report
+  noise.py        the 10,000-draw significance band
+scripts/          01_fetch 02_clean 03_v0 04_noise 07_sweep 08_pit_universe
 tests/            config, causality, accounting, cleaning, selection
 output/           nav, trades, holdings, weights, benchmarks, metrics (CSV)
 ```
 
+## Data
+
+**Prices:** Yahoo Finance via `yfinance`. **Index membership:** NSE constituent lists plus
+27 dated index-review press releases, committed under `data/raw/press_releases/` as the
+evidence behind the point-in-time universe. Membership is rebuilt by rolling today's
+published list backwards; at every step each added name must already be present, each
+removed name must be absent, and the list must stay at 100. A missed release breaks one of
+those invariants immediately.
+
+**Verified:** 1,786 trading days × 283 names, no interior gaps, 3 corporate-action
+corrections applied and 2 handled by an exit rule, 5 non-sessions excluded from the
+calendar. Adding 83 historical price series does not move the trading calendar — asserted,
+because a new session would shift every positional lookback. See
+`data/reports/data_quality.md`, which is generated rather than hand-written.
+
+**Not committed:** `data/raw/*.parquet` and `data/clean/*.parquet` are excluded by
+`.gitignore` — they are large and the scripts reproduce them. Snapshots are stamped with a
+fetch date and are immutable: the code refuses to overwrite one, because Yahoo silently
+revises history.
+
 ## How this repo is organised to be checkable
 
 **Every parameter is in `config.yaml`.** There is no `get(key, default)` anywhere in
-`src/` — a default in a getter is a design decision made in the dark, and a test greps
-for the pattern. A parameter whose decision is still open is `null`, and reading it
-raises an error naming the decision rather than guessing.
+`src/` — a default in a getter is a design decision made in the dark, and a test greps for
+the pattern. A parameter whose decision is still open is `null`, and reading it raises an
+error naming the decision rather than guessing.
 
-**`DECISIONS.md` records every choice**, including the ones that were rejected and why.
-48 of them so far.
+**`DECISIONS.md` records every choice**, including the ones that were rejected, and the
+ones that were later found wrong and reversed.
 
-**`backtest.py` is signal-agnostic.** It takes a holdings map and nothing about how those
-names were chosen, so V0, every later variant, the benchmark and all 10,000 noise draws
-run through one engine. A variant that ran through different plumbing would not be
-comparable.
+**`backtest.py` is signal- and weighting-agnostic.** It takes a holdings map and nothing
+about how those names were chosen, so the baseline, every variant, the benchmark and all
+10,000 noise draws run through one engine. An assertion pins the batched and scalar engines
+to the rupee.
 
 **`fetch.py` is never imported by the analysis path.** Network and analysis are separate
 scripts with a file boundary between them.
 
-**Causality is tested, not asserted.** `tests/test_causality.py` scrambles every price
-from the rebalance date onward and requires the selected book to be unchanged — and
-scrambles the formation window to prove the first test is not vacuous.
+**Causality is tested, not asserted.** `tests/test_causality.py` scrambles every price from
+the rebalance date onward and requires the selected book to be unchanged — then scrambles
+the formation window to prove the first test is not vacuous.
 
 ## Known limitations
 
 Disclosed rather than hidden; see `DECISIONS.md` and CLAUDE.md §10.
 
-- **Survivorship / index inclusion.** The universe is today's index membership, applied
-  from 2021. Names are partly in it *because* they rose. 20 of the 101 names in the
-  Feb-2019 Nifty 100 are absent from today's universe.
-- **Price return only.** Dividends are excluded, which understates a dividend-reinvesting
-  book by roughly 9pp of median five-year return.
-- **Two uncorrected demergers** (TMPV, VEDL) carry price drops a real holder did not
-  suffer, because NSE does not publish the entitlement ratio needed to adjust them.
+- **Six historical members cannot be priced** (DHANI, GSPL, HDFC, ISEC, MINDTREE, PEL) and
+  are excluded from the tradeable universe. This reintroduces a small amount of the
+  survivorship bias the point-in-time universe removes.
+- **Three names carry membership waivers.** MRF, BANKBARODA and NATIONALUM move between the
+  two indices in March 2021 with no sourced release returning them. All three remain inside
+  the union of the two indices throughout, which is what eligibility reads.
+- **Price return only.** Dividends are excluded, understating a dividend-reinvesting book
+  by roughly 9pp of median five-year return.
+- **Demergers are exited, not corrected.** Positions are sold before the ex-date rather
+  than adjusted by an entitlement ratio NSE does not publish.
 - **Window specificity.** 2021–25 was an exceptional period for Indian mid-caps. The
   strategy is not shown to work in general, only over the mandated window.

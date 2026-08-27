@@ -46,7 +46,7 @@ def main() -> int:
 
     # ── A8 ───────────────────────────────────────────────────────────────────
     days = calendar.trading_days(cfg, prices)
-    phantoms = calendar.phantom_days(prices)
+    phantoms = calendar.phantom_days(cfg, prices)
     print(f"[clean] calendar: {len(days)} trading days "
           f"({days[0].date()} -> {days[-1].date()}); "
           f"{len(phantoms)} phantom days excluded: "
@@ -54,7 +54,15 @@ def main() -> int:
 
     # ── A16 before anything is flagged ───────────────────────────────────────
     overrides = clean.load_overrides(cfg)
-    panel = clean.build_panel(cfg, prices, universe, days)
+    mem_path = clean.membership_path(cfg, as_of)
+    spans = pd.read_csv(mem_path) if mem_path.exists() else None
+    if spans is None:
+        print(f"[clean] no membership table at {mem_path.name} — every name treated as "
+              f"a member on every date (pre-A17 behaviour)")
+    else:
+        print(f"[clean] membership: {len(spans)} spans over "
+              f"{spans['symbol'].nunique()} symbols (A17, point-in-time)")
+    panel = clean.build_panel(cfg, prices, universe, days, spans)
     panel = clean.apply_corporate_actions(panel, overrides)
     applied = overrides[overrides["applied"].astype(bool)]
     print(f"[clean] corporate actions: {len(applied)} corrections applied, "
@@ -85,7 +93,7 @@ def main() -> int:
         long = pd.concat(
             [getattr(panel, f).stack(future_stack=True).rename(f)
              for f in ("open", "high", "low", "close", "volume",
-                       "tradeable", "stale", "bad_tick", "filled")],
+                       "tradeable", "stale", "bad_tick", "filled", "member")],
             axis=1).reset_index().rename(columns={"level_0": "date", "level_1": "isin"})
         fetch.write_snapshot(long, out, as_of, cfg["fetch.source"],
                              extra={"calendar": cfg["clean.trading_calendar"],

@@ -27,17 +27,22 @@ from src.config import load  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from importlib import import_module  # noqa: E402
 
-AS_OF = "2026-08-24"
+AS_OF = "2026-08-28"
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--window", choices=("main", "stress"), default="main")
+    ap.add_argument("--calendar", default=None,
+                    help="override execution.rebalance_calendar (FREQ grid, CLAUDE.md §11)")
+    ap.add_argument("--weighting", default=None, choices=("reset", "drift"),
+                    help="override weighting.reset_to_target (B3)")
     args = ap.parse_args()
     tag = "" if args.window == "main" else "_stress"
 
     cfg = load()
     v0_module = import_module("03_v0")
+    label = v0_module.apply_overrides(cfg, args.calendar, args.weighting)
     start_key, end_key = v0_module.WINDOWS[args.window]
 
     panel = clean.load_panel(cfg, clean.panel_path(cfg, AS_OF),
@@ -45,24 +50,27 @@ def main() -> int:
     capital = float(cfg["mandate.capital"])
     start, end = pd.Timestamp(cfg[start_key]), pd.Timestamp(cfg[end_key])
     print(f"[noise] window '{args.window}': {start.date()} -> {end.date()}")
+    print(f"[noise] calendar {cfg['execution.rebalance_calendar']} | weighting "
+          f"{'reset' if cfg['weighting.reset_to_target'] else 'drift'}")
 
     dates = calendar.rebalance_dates(cfg, panel.dates, start, end)
     eligibility = universe.eligibility_matrix(cfg, panel, dates)
 
     holdings = v0_module.build_holdings(cfg, panel, dates)
-    v0 = backtest.run(cfg, panel, holdings, capital, start, end)
+    forced = v0_module.build_events(cfg, panel)
+    v0 = backtest.run(cfg, panel, holdings, capital, start, end, forced)
     backtest.reconcile(v0, panel, capital)
     v0_pnl = metrics.total_net_pnl(v0, capital)
 
     # The assertion the whole band rests on. Without it a divergence in plumbing would
     # masquerade as a difference in selection.
-    noise.assert_engine_equivalence(cfg, panel, v0, holdings, capital, end)
+    noise.assert_engine_equivalence(cfg, panel, v0, holdings, capital, end, forced)
     print("[noise] engine equivalence: batch path reproduces backtest.run on V0")
 
     print(f"[noise] drawing {int(cfg['noise.n_draws']):,} portfolios "
           f"(seed {int(cfg['noise.master_seed'])}, "
           f"chunk {int(cfg['noise.chunk_size'])})...")
-    band = noise.band(cfg, panel, eligibility, dates, capital, end)
+    band = noise.band(cfg, panel, eligibility, dates, capital, end, forced)
 
     pnl = band.pnl
     percentile = float((pnl < v0_pnl).mean() * 100.0)
@@ -92,7 +100,11 @@ def main() -> int:
         print(f"\n  --- risk view skipped: {band.marks.shape[0]-1} rebalance marks, "
               f"fewer than {min_marks}. A volatility estimated from that few points "
               f"is not worth reporting. ---")
-        _save(cfg, band, pnl, v0_pnl, percentile, z, tag, risk=None)
+        print("  (Cadence asymmetry: higher-frequency arms clear this floor and report a "
+              "risk view\n   that lower-frequency arms cannot. Do not read the presence "
+              "of the metric as a\n   property of the strategy — it is a property of how "
+              "many marks the calendar gives.)")
+        _save(cfg, band, pnl, v0_pnl, percentile, z, tag, risk=None, label=label)
         return 0
     rar = band.return_per_unit_risk(years)
     v0_marks = np.array([capital]
@@ -107,7 +119,7 @@ def main() -> int:
     v0_vol = v0_q.std(ddof=1) * np.sqrt(periods / years)
     v0_rar = ((v0_marks[-1] / capital) ** (1.0 / years) - 1.0) / v0_vol
     rar_pct = float((rar < v0_rar).mean() * 100.0)
-    rand_vol = band.quarterly_returns().std(axis=0, ddof=1) * np.sqrt(periods / years)
+    rand_vol = band.period_returns().std(axis=0, ddof=1) * np.sqrt(periods / years)
 
     print()
     print("  --- adjusted for the risk taken ---")
@@ -117,9 +129,10 @@ def main() -> int:
           f"(random: median {np.median(rar):.2f}, max {rar.max():.2f})")
     print(f"  V0 percentile        {rar_pct:>18.2f}%   "
           f"({int((rar >= v0_rar).sum()):,} of {band.n_draws:,} match or beat it)")
-    print("  NOTE: volatility from ~20 quarterly marks — indicative, not precise.")
+    print(f"  NOTE: volatility from {periods} rebalance marks — "
+          f"{'indicative, not precise' if periods < 40 else 'well determined'}.")
 
-    _save(cfg, band, pnl, v0_pnl, percentile, z, tag,
+    _save(cfg, band, pnl, v0_pnl, percentile, z, tag, label=label,
           risk={"v0_volatility": v0_vol,
                 "random_volatility_median": float(np.median(rand_vol)),
                 "random_volatility_max": float(rand_vol.max()),
@@ -130,8 +143,8 @@ def main() -> int:
     return 0
 
 
-def _save(cfg, band, pnl, v0_pnl, percentile, z, tag, risk):
-    out = cfg.resolved_path("paths.output")
+def _save(cfg, band, pnl, v0_pnl, percentile, z, tag, risk, label=""):
+    out = import_module("03_v0").output_dir(cfg, label)
     out.mkdir(parents=True, exist_ok=True)
     summary = {
         "n_draws": band.n_draws, "master_seed": band.master_seed,
@@ -142,6 +155,7 @@ def _save(cfg, band, pnl, v0_pnl, percentile, z, tag, risk):
         "draws_beating_v0": int((pnl >= v0_pnl).sum()),
     }
     summary.update(risk or {})
+    out.mkdir(parents=True, exist_ok=True)
     pd.Series(pnl, name="pnl").to_csv(out / f"noise_band{tag}.csv", index=False)
     pd.Series(summary, name="value").to_csv(out / f"noise_summary{tag}.csv")
     print(f"\n[noise] artefacts -> {out}/noise_band{tag}.csv, noise_summary{tag}.csv")

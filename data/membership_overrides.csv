@@ -1,0 +1,26 @@
+kind,index_name,symbol,maps_to,effective,source,note
+rename,,ADANIGAS,ATGL,,"NSE symbol change; successor ATGL carries unbroken price history back through the old symbol's last print",Adani Total Gas
+rename,,ADANITRANS,ADANIENSOL,,"NSE symbol change 2023; successor ADANIENSOL carries unbroken history",Adani Energy Solutions
+rename,,AMARAJABAT,ARE&M,,"NSE symbol change 2023; ARE&M returns 251 bars over 2020-06..2021-06 where AMARAJABAT returns none",Amara Raja Energy & Mobility
+rename,,CADILAHC,ZYDUSLIFE,,"NSE symbol change 2022; successor carries unbroken history",Zydus Lifesciences
+rename,,GMRINFRA,GMRAIRPORT,,"NSE symbol change 2024; GMRINFRA is included in Midcap 100 eff 2024-03-28 (ind_prs28022024) and never excluded, and GMRAIRPORT is in the 2026-08-24 list",GMR Airports
+rename,,IBULHSGFIN,SAMMAANCAP,,"NSE symbol change 2024",Sammaan Capital
+rename,,INFRATEL,INDUSTOWER,,"Bharti Infratel renamed Indus Towers Dec 2020",Indus Towers
+rename,,L&TFH,LTF,,"NSE symbol change 2024",L&T Finance
+rename,,LTI,LTIM,,"L&T Infotech renamed LTIMindtree on the Mindtree merger, Nov 2022",LTIMindtree
+rename,,LTIM,LTM,,"NSE symbol change; LTM returns 251 bars over 2020-06..2021-06 where MINDTREE returns none",LTIMindtree
+rename,,MCDOWELL-N,UNITDSPR,,"NSE symbol change",United Spirits
+rename,,MOTHERSUMI,MOTHERSON,,"Motherson Sumi renamed Samvardhana Motherson International 2021",Samvardhana Motherson
+rename,,NIITTECH,COFORGE,,"NIIT Technologies renamed Coforge 2020",Coforge
+rename,,RNAM,NAM-INDIA,,"Reliance Nippon AM renamed Nippon India AM 2019",Nippon Life India AMC
+rename,,SRTRANSFIN,SHRIRAMFIN,,"Shriram Transport Finance renamed Shriram Finance 2022",Shriram Finance
+rename,,TATAMOTORS,TMPV,,"Continuing listing after the Oct-2025 demerger; see DECISIONS.md A16",Tata Motors Passenger Vehicles
+rename,,ZOMATO,ETERNAL,,"NSE symbol change 2025; ZOMATO is included in Nifty 100 eff 2022-03-31 (ind_prs24022022_1) and never excluded, and ETERNAL is in the 2026-08-24 list",Eternal
+revocation,nifty midcap 100,IREDA,,2024-03-28,"ind_prs19032024.pdf: 'Nifty Midcap 100 ... IREDA Inclusion revoked'",announced then withdrawn before taking effect
+revocation,nifty midcap 100,IDEA,,2024-09-30,"ind_prs25092024.pdf: 'Nifty Midcap 100 Vodafone Idea Ltd. IDEA Exclusion revoked'",exclusion for impact-cost non-compliance was revoked
+revocation,nifty midcap 100,CENTRALBK,,2024-09-30,"ind_prs25092024.pdf: 'Nifty Midcap 100 ... Central Bank of India CENTRALBK Inclusion revoked'",inclusion withdrawn when the IDEA exclusion was revoked
+ceased,,TATAMTRDVR,,,"Tata Motors DVR class converted to ordinary shares 2024; the class ceased to exist. Included in Nifty 100 eff 2023-09-29 (ind_prs17082023) with no matching exclusion.",Tata Motors DVR
+inclusion,nifty midcap 100,BSE,,2024-03-28,"ind_prs19032024.pdf: 'Nifty Midcap 100  Indian Renewable Energy Dev. Agency Ltd. IREDA Inclusion revoked  BSE Ltd. BSE Inclusion' — BSE takes the slot IREDA vacated",substitution named in the revocation release
+unsourced_move,,MRF,,,"ind_prs23022021.pdf moves MRF into Nifty 100 and out of Nifty Midcap 100 eff 2021-03-31; MRF is in MIDCAP100 in the 2026-08-24 list. Swept every weekday 2019-2026 of niftyindices.com/Press_Release/ind_prs{DDMMYYYY}.pdf (976 documents) and found no release returning it.",return leg not sourced; stays inside the union throughout
+unsourced_move,,BANKBARODA,,,"ind_prs23022021.pdf moves BANKBARODA out of Nifty 100 and into Nifty Midcap 100 eff 2021-03-31; BANKBARODA is in NIFTY100 in the 2026-08-24 list. Same sweep, no return release found.",return leg not sourced; stays inside the union throughout
+unsourced_move,,NATIONALUM,,,"ind_prs23022021.pdf excludes NATIONALUM from Nifty Midcap 100 eff 2021-03-31; NATIONALUM is in MIDCAP100 in the 2026-08-24 list. Same sweep, no return release found.",return leg not sourced; stays inside the union throughout

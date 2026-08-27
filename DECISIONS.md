@@ -1,8 +1,8 @@
 # Decisions
 
 Every choice where a reasonable person could have picked differently and the numbers
-would have changed. **48 decisions: 37 frozen, 1 provisional, 1 dead, 3 non-issues,
-6 still open.** They appear below as 46 entries — A5 and C6 are one question, and
+would have changed. **50 decisions: 40 frozen, 1 under trial, 1 dead, 2 non-issues,
+6 still open.** They appear below as 48 entries — A5 and C6 are one question, and
 D6/D7/D8 are three parts of one answer.
 
 Fourteen were closed on 24 Aug 2026: six answered directly, four settled by the
@@ -14,8 +14,14 @@ Nothing here was decided by default — an open decision is a `null` in `config.
 and the code raises an error naming the decision rather than guessing.
 
 **Status key** — `FROZEN` decided and locked · `PROVISIONAL` decided but explicitly
-revisitable · `OPEN` not yet decided, blocks code · `DEAD` no longer applies ·
-`NON-ISSUE` checked and there is nothing to decide.
+revisitable · `UNDER TRIAL` both options being measured, ledger decides · `OPEN` not yet
+decided, blocks code · `DEAD` no longer applies · `NON-ISSUE` checked and there is nothing
+to decide.
+
+Two decisions were amended on 27 Aug 2026 because they turned out to be **wrong, not just
+incomplete**: B1 claimed any cadence was a one-word config change (false below monthly),
+and B9 claimed fewer than 10 eligible names could not happen (false on one date). Both
+corrections are recorded in place rather than by editing the original claim away.
 
 ---
 
@@ -71,16 +77,31 @@ like with like.
 *We must disclose in the Excel that our profit figure understates a dividend-reinvesting
 portfolio by roughly 9pp.*
 
-### A3 · Which stocks are in the universe, and as of when? `FROZEN`
-**Today's Nifty 100 + Nifty Midcap 100 lists, frozen at download time.**
+### A3 · Which stocks are in the universe, and as of when? `AMENDED 2026-08-28`
+**Point-in-time membership: whichever stocks were actually in Nifty 100 or Nifty Midcap
+100 on the day we rebalance.** See A17 for how that was rebuilt.
 
-This is a known cheat and everybody doing this competition has it: today's index
-members are partly there *because* they went up. Backtesting them from 2021 flatters
-the result.
+This entry used to read *"today's Nifty 100 + Nifty Midcap 100 lists, frozen at download
+time"*, justified by the claim that **"no free 2021 membership list exists"**. That claim
+was false, and it was never checked. NSE publishes every index change as a dated press
+release at a stable URL; 11 semi-annual reviews cover the scoring window.
 
-We can't fix it — no free 2021 membership list exists — so we **measure** it instead by
-running the same strategy on a February 2019 membership snapshot and reporting the gap.
-20 of the 101 names in that 2019 list are gone from today's universe.
+The concession mattered far more than the entry assumed. Measured, same rule, same dates,
+same engine, only the permitted list differing:
+
+| Universe | Total Net PNL | Total return |
+|---|---|---|
+| Today's 200 constituents | ₹8,76,46,846 | +876.5% |
+| **Point-in-time membership** | **₹3,88,03,708** | **+388.0%** |
+
+**Index-inclusion bias was worth 488 percentage points — more than half the old headline.**
+The equal-weight benchmark moves with it (+284.9% to +151.6%), so the strategy's edge over
+its own universe falls from +592pp to +236pp. It is still large, and the noise band still
+says it is not luck, but the old number was over half artefact.
+
+Kept for comparison rather than deleted: the old universe remains runnable and both sets of
+figures are reported side by side. That gap *is* the measurement this entry originally
+promised, done properly.
 
 ### A4 · Do the two index lists overlap? `NON-ISSUE`
 Checked: they don't. 200 stocks, 200 unique IDs, no duplicates. There was nothing to
@@ -97,17 +118,25 @@ Measured: this cohort is a barbell, not a systematic drag. Some were huge winner
 (+2154%, +1301%), some were losers (−28%, −17%), and only 2 of the 26 would have made
 the universe-wide top 20 anyway.
 
-### A6 · What about stocks that were delisted or taken over? `NON-ISSUE`
-There aren't any — all 200 have data through today. But that's not clean data, that's
-**the bias in A3 showing up**: we're only looking at survivors. We assert it rather than
-writing a handler for a case that cannot occur.
+### A6 · What about stocks that were delisted or taken over? `NON-ISSUE (re-verified 2026-08-28)`
+Under A3's original today's-only universe this was trivially true, and the entry said so:
+"that's not clean data, that's **the bias in A3 showing up**".
+
+Re-checked once A17 added 89 historical members: **none of the 83 we can price stops
+trading inside the window.** Delistings genuinely do not occur here, so the case still
+needs no handler. Six historical members have no usable Yahoo series at all (DHANI, GSPL,
+HDFC, ISEC, MINDTREE, PEL) — two of those merged into acquirers. They are excluded from
+the tradeable universe and disclosed, which reintroduces a sliver of the very bias A3
+removes. Stated rather than buried: if one of the six would have ranked top-10 at some
+rebalance, we skipped a pick and cannot know it.
 
 ### A7 · Names or ID numbers? `FROZEN`
 **ISIN internally, ticker for display.** Tickers get renamed — Zomato became ETERNAL and
 is in our universe right now. ISIN never changes.
 
 ### A8 · Which days count as trading days? `FROZEN`
-**Every day at least one stock actually traded. 1,787 days.**
+**Every day at least one stock actually traded, minus days hand-excluded on evidence.
+1,786 days.**
 
 This one mattered more than expected. Yahoo emits price bars on **four market holidays**
 — 15 Jan, 1 May, 28 May and 26 Jun 2026 — where 189–200 stocks all show a price and
@@ -117,6 +146,30 @@ Filtering on volume removes all four fakes while keeping the two genuine Diwali 
 sessions (a Sunday and a Saturday, both with real trading). Using Yahoo's Nifty 50 dates
 instead would have thrown away both real sessions; using the Nifty 100 dates would have
 thrown away nine.
+
+**Rider, 27 Aug 2026 — one stale bar the volume filter does not catch.** The rule above is
+"at least *one* stock traded". `2025-03-18` clears that bar by a margin of two: it carries
+prices for 193 names, of which **191 have a close identical to `2025-03-17`**, with
+`open == prior close` for the same 191 and a median return of exactly `0.0000%`. Total
+volume across the universe is 14.3 M against a normal ~1.3 bn, concentrated in 2 names.
+The next session moves 3.38% at the median — two days of return compressed into one.
+
+It is a stale Yahoo bar, not a trading session. It never surfaced before because no
+quarterly rebalance falls in March; it surfaces the moment any cadence evaluates every
+trading day, via A10 (which reads yesterday's volume) and the B9 assertion.
+
+**Handled as an explicit blacklist, not by loosening A8.** `clean.phantom_day_overrides`
+names a file of dates excluded by hand, with the evidence recorded per row, and
+`data_quality.md` reports them separately from the volume-filtered days.
+
+The alternative was to restate A8 as a *participation threshold* — drop a day where fewer
+than some fraction of the universe traded. It was rejected for now on the grounds that the
+threshold would be a fitted number with exactly one observation to fit it against, and A8
+is frozen on a rule that is currently correct for 1,786 of 1,787 days. A blacklist makes
+the exception visible and countable; a threshold would silently reclassify days nobody has
+looked at. The cost is stated plainly: **the next such bar is caught only if someone
+looks.** `A11` (10+ identical closes) is the tripwire most likely to catch it, and the
+quality report now carries a cross-universe staleness line for the same reason.
 
 ### A9 · What if a stock we hold has no price that day? `FROZEN`
 **Carry yesterday's price forward, for at most 5 days. Never backwards.**
@@ -134,7 +187,8 @@ Holding through a dead day is fine. *Buying* on one is a trade that couldn't hav
 happened. We check yesterday because we buy at the morning open, and looking at today's
 full-day volume before deciding would be seeing the future.
 
-Measured: 300 such days across the panel, 53 of them one stock (PATANJALI).
+Measured: **109** such days across the panel, 53 of them one stock (PATANJALI).
+*(Was 300 before the A8 rider. 191 of those were the `2025-03-18` stale bar alone — the same defect, counted from the other side.)*
 
 ### A11 · A stock's price hasn't moved in days. Is it broken? `FROZEN`
 **Flag 10 or more identical closes in a row. Report it, don't act on it.**
@@ -208,9 +262,83 @@ flagged and disclosed.
 > risk did not materialise for V0. It is *not* closed in general: any future variant that
 > holds either name across those dates must re-run this check.
 
+**Rider exercised 2026-08-27 — and it fired.** The `FREQ` grid (CLAUDE.md §11) added seven
+variants, and the standing re-check found that **weekly and daily rebalancing both hold
+VEDL across its 2026-04-30 demerger**, at roughly a 10% book weight, for a phantom loss of
+**6.2–6.8% of NAV** in the stress window. Quarterly and monthly hold no flagged name across
+an ex-date and remain clean.
+
+This is the rider doing the job it was written for. Those two arms report H1-2026 returns of
++1.6% and +2.1% against monthly's +7.6%, and without the check that gap would have been
+reported as evidence that fast rebalancing is fragile. Almost all of it is one uncorrected
+corporate action.
+
+No selection depends on it — the demerger falls outside the 2021–25 window that selects, and
+§9 forbids choosing on 2026 regardless — so the four affected ledger rows are annotated
+rather than restated, and the arms keep their `pass`.
+
 ---
 
 # B · Mechanics — dates, trading, accounting
+
+### A17 · Where does historical index membership come from? `FROZEN 2026-08-28`
+**NSE's own index-review press releases, rebuilt by rolling today's published list
+backwards — and the roll-back checks itself.**
+
+NSE announces every index change in a dated PDF at
+`niftyindices.com/Press_Release/ind_prs{DDMMYYYY}.pdf`. Sweeping every weekday from 2019 to
+2026 found 976 documents, of which **27 change Nifty 100 or Nifty Midcap 100**, yielding
+**43 change records** across the window.
+
+The reconstruction runs *backwards* from today's list, and that is what makes it
+verifiable rather than merely plausible. At each step three things must hold: every
+`included` name must already be present, every `excluded` name must be absent, and the list
+must stay at exactly 100. A missed or misparsed release breaks one of them at once. The
+walk completes in **28 states**, and at the window edge lands on **Nifty 100 = 100,
+Midcap 100 = 99, overlap = 0**.
+
+Every quirk below was found by an invariant failing, not by reading ahead:
+
+- The `Sr. No. Company Name Symbol` table header **repeats mid-list** wherever a table
+  crosses a page break, so it must be deleted everywhere rather than split on.
+- A ticker is the **last all-caps token containing a letter**. Footnote prose
+  ("*Excluded on account of exclusion from Nifty Midcap 150 index") otherwise ends the
+  entry on the bare number `150`, which is silently taken as the symbol.
+- Some changes are later **revoked**, usually with a substitute named in the same
+  differently-formatted release (IREDA out, BSE in, March 2024). Those documents are not
+  parsed; they are recorded as evidence-carrying rows.
+
+**Three names are waived, by name, with the search recorded.** MRF, BANKBARODA and
+NATIONALUM demonstrably swap between the two indices in March 2021, and no release
+returning them exists in any of the 976 documents. The membership checks are waived for
+those three; the size invariant is not, and its only slack is the number of waived names in
+that same record — a fixed tolerance would be exactly the fallback rule B9 refuses. The
+practical impact is nil: all three stay inside Nifty 100 ∪ Midcap 100 throughout, and the
+union is the only thing eligibility reads.
+
+The walk stops at the window edge. Membership is read only on rebalance dates, the first
+of which is the first trading day of the window, so reconstructing further back buys
+nothing — while the 2019–20 releases carry defects (the bank mergers, the ALKEM/LTI
+reshuffle) whose repair would be pure cost.
+
+*Rider to A7:* a name that left the index has no ISIN we can source, so those 83 carry a
+synthetic stable key. It cannot collide with a real ISIN and is never displayed.
+
+### A18 · A stock we own leaves the index mid-quarter. What happens? `FROZEN 2026-08-28`
+**Sell it on the effective date and hold the cash to the next rebalance.** Same mechanism
+as B10 (`src/events.py`), and the noise band applies it identically.
+
+Causal: NSE announces a review about five weeks before it takes effect, so an investor
+standing on that morning already knows. The alternative — hold the name until the next
+scheduled rebalance, where it simply fails eligibility — costs nothing to implement and was
+the other serious candidate. Selling was chosen because it makes one claim true without
+qualification: **the book never holds a stock outside the universe the mandate names.**
+
+**The cost, stated rather than discovered.** Stocks are usually dropped from an index
+because they *fell*, so selling on the effective date harvests part of a known
+index-deletion effect. That is a second signal riding alongside momentum, and §1 asks for
+one methodology applied consistently. It is disclosed, and the alternative rule remains a
+config switch so the sensitivity can be measured rather than argued about.
 
 ### B1 · When do we rebalance? `FROZEN`
 **Quarterly — the first trading day of January, April, July and October.** 20 rebalance
@@ -222,10 +350,37 @@ question. And quarter boundaries need no defending, where a fixed 63-day spacing
 onto arbitrary dates over five years.
 
 Not locked as the only frequency ever tested. CLAUDE.md §7 says holding period is one of
-the two levers that actually move the number, so semi-annual and monthly are queued as
-backlog trials. The code reflects that: the frequency is a **config word**, dispatched
-through an anchor-month map, so a trial is a one-word change and not a code path. Each
-alternative cadence gets its own ledger line.
+the two levers that actually move the number, so alternative cadences are queued as
+backlog trials. Each alternative cadence gets its own ledger line.
+
+**Amended 27 Aug 2026 — the "one-word change" claim was false below monthly.** This entry
+used to say the frequency is "a **config word**, dispatched through an anchor-month map,
+so a trial is a one-word change and not a code path." That holds for monthly, semi-annual
+and annual, which are all anchored to a month boundary. It does not hold for **weekly or
+daily**, which have no representation in an anchor-*month* map at all — `_ANCHOR_MONTHS`
+maps a cadence to a tuple of months and `rebalance_dates` loops `for year: for month:`.
+The claim was written when only month-anchored cadences were contemplated and was not
+re-checked when the frequency sweep was proposed.
+
+The fix keeps the spirit and drops the overreach. The dispatch now has **two anchor
+families plus one literal**:
+
+| Name | Anchor |
+|---|---|
+| `monthly` / `quarterly` / `semiannual` / `annual` `_first_trading_day` | first trading day on or after the 1st of each anchor month |
+| `weekly_first_trading_day` | first trading day of each ISO week |
+| `every_trading_day` | every trading day in the window |
+
+The month family is **untouched**, so quarterly resolves to the identical 20 dates and V0
+remains the baseline the ledger is measured against. Weekly keeps B1's actual load-bearing
+property — a holiday moves the rebalance forward rather than dropping it. Daily is named
+as a literal because `daily_first_trading_day` would be nonsense.
+
+What this entry rejected, and still rejects, is **stride spacing** — "every N trading
+days". That was rejected because "a fixed 63-day spacing drifts onto arbitrary dates over
+five years", and the objection stands: stride would also move quarterly off 1 Jan / 1 Apr
+/ 1 Jul / 1 Oct and break comparability with the existing V0 result. Calendar anchoring is
+retained at every cadence.
 
 ### B2 · When is the signal measured, and when do we buy? `FROZEN`
 **Signal uses data up to yesterday's close. We buy at this morning's open.**
@@ -236,13 +391,77 @@ using a price we then trade at.
 There's a specific trap here: the obvious way to slice data in code (`panel.loc[:t]`)
 *includes* today. There is a dedicated function and a test to prevent exactly that.
 
-### B3 · Do we rebalance back to equal weights? `PROVISIONAL`
-**For now: yes, reset all 10 back to 1/10 each quarter.** Deliberately not locked.
+### B3 · Do we rebalance back to equal weights? `RESOLVED 2026-08-28 — drift`
+**V0 keeps resetting all 10 back to 1/10 at every rebalance. Both rules are now being
+measured against each other rather than assumed.**
 
-The concern: resetting means selling your winners every quarter. That works against
-momentum, which is the whole strategy. So it's recorded in three places so it can't
-quietly become permanent — flagged here, pre-registered as a trial to run, and exposed
-as a one-line config switch rather than buried in code.
+The concern that kept this provisional: resetting means selling your winners every
+rebalance, which works against momentum, the whole strategy. It was recorded in three
+places so it could not quietly become permanent — flagged here, pre-registered as a trial,
+and exposed as a one-line config switch rather than buried in code.
+
+**Promoted to a trial on 27 Aug 2026, because the frequency sweep forces it.** A rebalance
+does two separable jobs: it re-picks *which* names to hold, and it resets *how much* of
+each. Changing the cadence changes how often **both** happen, and they pull in opposite
+directions — re-picking more often chases momentum faster, resetting more often trims
+winners harder. At daily cadence the reset job means trimming every winner every single
+day. A one-dimensional cadence sweep at `reset_to_target: true` would therefore not be
+measuring holding period; it would be measuring holding period confounded with a reset
+penalty that grows with the same knob.
+
+So the sweep is run as a **2-D grid**: 4 cadences × {reset, drift}, which separates the two
+effects and absorbs the pre-registered `B3-drift` trial into the same piece of work. The
+drift rule is: retained names keep their drifted share count and are not traded at all;
+exits sell in full; the proceeds plus existing cash fund the entries, split equally. Book
+size is fixed at 10, so `#exits == #entries` always, and the first rebalance has no
+incumbents and is therefore identical to reset — a free assertion.
+
+Config: `weighting.reset_to_target`. The key already existed and the engine ignored it;
+`backtest.py` and `noise.py` are now genuinely weighting-agnostic, which CLAUDE.md §11
+requires or the noise band cannot adjudicate the variant.
+
+**Resolved 2026-08-28, and the answer reversed when the universe was fixed.**
+
+Run on the old today's-constituents universe, the `FREQ` grid said **reset** wins at all
+four cadences, and this entry was briefly closed that way — "resetting is a rebalancing
+premium, not a momentum tax". Re-run on A3's point-in-time universe, **drift wins at all
+four cadences**:
+
+| cadence | drift − reset |
+|---|---|
+| quarterly | +₹4,91,465 |
+| monthly | +₹14,34,084 |
+| weekly | **+₹29,00,243** |
+| daily | +₹6,93,409 |
+
+So the original concern behind B3 — that resetting to 1/10 sells your winners and works
+against momentum — **is correct after all**, and the earlier "backwards" verdict was an
+artefact of a universe stuffed with names that were added *because* they had already run.
+Reset trims winners; in a hindsight-selected universe there are more winners to trim, and
+trimming them looked free.
+
+Recorded rather than quietly restated: a conclusion this project published for a day was
+reversed by fixing the data underneath it, not by a better argument.
+
+### B3-r · What pays the cost under drift? `FROZEN`
+**The B12 reserve multiple applies to deployable cash, not to book value.**
+
+A rider forced by B3's drift path, recorded separately because it is a real choice. B12
+sizes targets on `value × (1 − 2·rate)` where `value` is the **whole book**. Under drift
+that is incoherent: taking a haircut against the whole book would require selling part of
+a *retained* position to raise the reserve, which contradicts the one thing drift is
+defined to do — leave retained names alone.
+
+So under drift the same multiple applies to the cash actually being deployed:
+
+    deployable = (cash + sell_proceeds) × (1 − 2 · rate)
+
+This is conservative. The true requirement is roughly `1 × rate` on the buys, since the
+sell-side cost has already been deducted from proceeds; reserving `2 × rate` overshoots.
+That is deliberate and matches B12's stated reasoning: a single pass, explainable in one
+sentence, with a guarantee that does not depend on a loop converging. The alternative —
+solving `buy_notional = (cash + proceeds − sell_cost) / (1 + rate)` exactly — was rejected
+for the same reason B12 rejected iterating to convergence.
 
 ### B4 · Whole shares or fractions? `FROZEN`
 **Whole shares.** NSE does not trade fractions, so a backtest that buys 3.7 shares is
@@ -281,14 +500,52 @@ simpler.
 **Start fresh with ₹1 crore on the first trading day of 2026.** A separate backtest, not
 a continuation — nothing carries over.
 
-### B9 · What if fewer than 10 stocks are eligible? `NON-ISSUE`
-Can't happen. The minimum number of eligible stocks on any date is **174**. We assert it
-rather than writing a fallback that would never run.
+### B9 · What if fewer than 10 stocks are eligible? `FROZEN`
+**We assert, and we fix the data. There is no fallback rule.**
 
-### B10 · What if a stock we hold splits? `OPEN`
-Recommended: handled automatically by adjusted prices, but disclosed — it means the share
-counts in our trade log are adjusted numbers, not the raw counts you'd have held. A
-reviewer will ask.
+This entry read `NON-ISSUE — can't happen. The minimum number of eligible stocks on any
+date is 174.` **That was measured over quarterly rebalance dates only, and it is false in
+general.** Evaluated over *every* trading day in the window, there is one date —
+`2025-03-19` — where exactly **2** names are eligible.
+
+The cause is not a market event. It is a bad bar: `2025-03-18` carries prices for 193
+names of which **191 are identical to the previous close**, with `open == prior close` and
+only 2 names recording any volume. A10 reads *yesterday's* volume to decide what is
+tradeable today, so a stale day poisons the next day's eligible set. See the A8 rider.
+
+The response is to correct the calendar (A8 rider), not to write a fallback. A rule that
+says "if fewer than 10 are eligible, do something else" would have silently absorbed a
+data defect and produced a plausible-looking number instead of an error. The assertion at
+`universe.eligibility_matrix` did its job: it is what surfaced the bad bar at all.
+
+### B10 · What if a stock we hold splits, or demerges? `FROZEN 2026-08-28`
+**Splits and bonuses: handled by adjusted prices (A16). Corporate actions we cannot
+model: sell the position on the last session that still trades cum entitlement, and hold
+the cash to the next rebalance.** Config: `execution.corporate_action_mode:
+exit_at_ex_date`; `hold_through` keeps the old behaviour, so this is a config switch and
+not an engine edit.
+
+Why it was needed. A demerger prints a price fall the holder never suffered — they
+received shares in the spun-off entity that a price-only panel cannot see, and NSE
+publishes no ratio to adjust it (A16). Selling before the discontinuity is the
+conservative reading: we forgo whatever the spun-off entity was worth, and we give up the
+final cum session's intraday move. Both err against us, which is the right direction for a
+distortion we cannot measure.
+
+**The off-by-one is the whole rule and it is easy to get silently wrong.** The ex-date's
+own *open* is already ex-entitlement: VEDL closed at 773.60 on 2026-04-29 and opened at
+289.50 on 2026-04-30, a −62.6% gap. Because the engine fills at opens (B2), an exit
+scheduled *on* the ex-date books the entire phantom loss instead of avoiding it. Measured
+on the weekly arm's stress window, which does hold VEDL across it: scheduling on the
+ex-date gave +1.8%, one session earlier gave **+8.6%** — against +1.61% with no rule at
+all. The first attempt looked like it worked and did almost nothing.
+
+The band implements the identical rule (`src/events.py`, `noise._run_batch`), because a
+strategy that can dump a name mid-quarter scored against a baseline that cannot would be
+measuring the rule rather than the selection.
+
+Disclosed either way: the share counts in our trade log are split-adjusted numbers, not the
+raw counts a holder would have had.
 
 ### B11 · What do we do with dividend cash? `DEAD`
 Nothing — A2 removed dividends from the project entirely.
@@ -491,12 +748,51 @@ bar that is too high, and will reject some genuine but modest improvements.
 That is the intended posture. A panel is more impressed by a strict test we might fail
 than by a clever one that flatters us, and the alternative — a paired null that resamples
 only what changed — costs a paragraph of explanation to buy statistical power we do not
-need. We are not hunting for small effects; §7 shows only ~174 pp of V0's return sits in
-the selection term at all.
+need. (This paragraph used to close with "§7 shows only ~174 pp of V0's return sits in the
+selection term at all". That figure was superseded when §7's attribution ladder was
+corrected on 25 Aug 2026 — the selection term is **+615 pp**, not 174 pp. The argument for
+the strict posture does not depend on it, but the number was wrong and is removed.)
 
 The consequence is recorded in the ledger's own rules: `z` is written as a **number**,
 never as a pass/fail tick, so nobody reads a cleared threshold as stronger evidence than
 it is.
+
+### D11-r · Which sigma, when the calendar itself is the variable? `FROZEN`
+**Both. The ledger carries two `z` columns.**
+
+Recorded 27 Aug 2026, **before the frequency sweep was run**, because the effect is
+predictable from D2's construction and would look like an excuse if it were written down
+afterwards.
+
+D2 re-draws all 10 names at *every* rebalance date. That is deliberate, and D2 already
+concedes it "sets a **lower** bar" than a buy-and-hold null. What D2 did not anticipate is
+that **the size of that effect is a function of the rebalance cadence**, which is exactly
+the variable a frequency sweep moves. Two things happen at once as cadence rises:
+
+1. Averaging. Re-drawing 20 times averages out some luck; re-drawing 1,235 times averages
+   out proportionally more, so the spread collapses.
+2. Costs. A fresh draw of 10 from ~180 retains about 0.55 names, so each re-draw turns over
+   ~94% of the book and pays 10 bps on it. At daily that is ~470x annual turnover.
+
+Measured across the sweep's cadences, the band's standard deviation falls from
+**Rs 86.05 lakh** (quarterly) to **Rs 8.22 lakh** (daily), and the daily band's *mean PNL
+is negative* — the random book loses money paying its own commissions.
+
+So a `z` taken against each cadence's own sigma is **not comparable down the table**: the
+daily arm would post a large `z` mostly because its denominator shrank tenfold, not because
+it found anything more. Reporting only that number would be the precise failure D2's
+"record the raw score, not a pass/fail tick" rule exists to prevent.
+
+The ledger therefore records:
+
+| Column | Definition | Answers |
+|---|---|---|
+| `z_own` | `(PNL_arm − PNL_V0) / sigma` of a band on **that arm's own calendar and weighting** | Does this arm beat random portfolios trading at the same speed? |
+| `z_qtr` | `(PNL_arm − PNL_V0) / 86,05,419` — the frozen quarterly sigma | How do the arms rank against **one fixed ruler**? |
+
+`z_own` keeps D2 literal and is the stronger claim for any single arm. `z_qtr` is the only
+one of the two that may be read *across* rows. Neither is dropped, because each answers a
+question the other cannot.
 
 ---
 
@@ -509,10 +805,8 @@ it is.
 | The V1 composite | C3, C4, C5, C8, C9 |
 | Documentation only | B10 |
 
-Two more are deliberately unresolved rather than open:
+One more is deliberately unresolved rather than open:
 
-- **B3** (reset to equal weight each quarter) stands `PROVISIONAL`, with `B3-drift`
-  pre-registered as a trial in CLAUDE.md §11.
 - **How weights are reported** — target, executed, or daily drifted — is deferred until
   the strategy settles, since it changes no number. The backtest emits all three, so the
   choice stays free.

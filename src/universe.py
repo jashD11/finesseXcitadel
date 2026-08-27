@@ -37,14 +37,20 @@ def eligible_at(cfg: Config, panel: Panel, day: pd.Timestamp) -> list[str]:
     """
     Names eligible for selection at ``day``.
 
-    Two conditions, both frozen:
+    Three conditions, all frozen:
 
     - **A5/C6** — an unbroken close over the full feature window ending at t-1. No
       partial windows, no imputation: a name that has not been listed long enough sits
-      the quarter out rather than being ranked on a made-up number.
+      the period out rather than being ranked on a made-up number.
     - **A10** — tradeable at ``day``, which `clean.flag_zero_volume` computed from
       *yesterday's* volume. A name that printed a price but traded nothing cannot be
       bought at this morning's open.
+    - **A17** — a constituent of Nifty 100 *or* Nifty Midcap 100 **on that date**, from
+      the point-in-time membership table. This is the gate A3 originally conceded: with
+      today's constituent list applied backwards, a name was eligible in 2021 partly
+      because it had risen enough to join the index by 2026. The union is what is
+      tested, because the mandate names both indices and several stocks move between
+      them mid-window without ever leaving the pair.
     """
     if not bool(cfg["eligibility.require_full_window"]):
         raise ValueError("A5/C6 froze require_full_window: true")
@@ -57,7 +63,8 @@ def eligible_at(cfg: Config, panel: Panel, day: pd.Timestamp) -> list[str]:
     window = panel.close.iloc[first:cutoff_pos + 1]
     complete = window.notna().all()
     tradeable = panel.tradeable.loc[day]
-    names = panel.isins[(complete & tradeable).to_numpy()]
+    member = panel.member.loc[day]
+    names = panel.isins[(complete & tradeable & member).to_numpy()]
     return sorted(names)
 
 

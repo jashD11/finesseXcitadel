@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
+from src import calendar
 from src.config import Config
 from src.decisions import ConfigError
 
@@ -38,6 +39,7 @@ class Panel:
     stale: pd.DataFrame       # A11 — report-only
     bad_tick: pd.DataFrame    # A12 — flag, never corrected
     filled: pd.DataFrame      # A9 — where a price was carried forward
+    member: pd.DataFrame      # A17 — point-in-time index membership (either index)
     symbols: pd.Series        # ISIN -> ticker, for display only (A7)
 
     @property
@@ -148,12 +150,16 @@ def _assert_returns_preserved(before: pd.DataFrame, after: pd.DataFrame,
 
 
 def build_panel(cfg: Config, prices: pd.DataFrame, universe: pd.DataFrame,
-                days: pd.DatetimeIndex) -> Panel:
+                days: pd.DatetimeIndex, spans: pd.DataFrame | None = None) -> Panel:
     """
     Long raw prices -> wide (date x ISIN) frames on the A8 calendar.
 
     Keyed by ISIN (A7) because tickers get renamed. The ticker is kept alongside for
     display and is never used to join anything.
+
+    ``spans`` is the point-in-time membership table (A17). Passing None marks every name
+    a member on every date, which is exactly the pre-A17 behaviour and is what the
+    synthetic test panel wants -- it has no index membership to speak of.
     """
     if cfg["universe.identity_key"] != "isin":
         raise ConfigError(f"A7 froze 'isin'; got {cfg['universe.identity_key']!r}")
@@ -169,12 +175,24 @@ def build_panel(cfg: Config, prices: pd.DataFrame, universe: pd.DataFrame,
 
     blank = {k: pd.DataFrame(False, index=days, columns=universe["isin"]) for k in
              ("tradeable", "stale", "bad_tick", "filled")}
-    return Panel(symbols=universe.set_index("isin")["symbol"], **frames, **blank)
+    symbols = universe.set_index("isin")["symbol"]
+    if spans is None:
+        member = pd.DataFrame(True, index=days, columns=universe["isin"])
+    else:
+        from src.membership import matrix
+        member = matrix(spans, symbols, days).reindex(columns=universe["isin"])
+    return Panel(symbols=symbols, member=member, **frames, **blank)
 
 
 def panel_path(cfg: Config, as_of: str) -> Path:
     """Where `scripts/02_clean.py` persists the panel for a given snapshot date."""
     return cfg.resolved_path("paths.data_clean") / f"panel_{as_of.replace('-', '')}.parquet"
+
+
+def membership_path(cfg: Config, as_of: str) -> Path:
+    """The point-in-time membership table for a snapshot (A17)."""
+    return (cfg.resolved_path("paths.data_raw")
+            / f"membership_{as_of.replace('-', '')}.csv")
 
 
 def universe_path(cfg: Config, as_of: str) -> Path:
@@ -214,7 +232,7 @@ def load_panel(cfg: Config, panel_file: Path, universe_file: Path) -> Panel:
               for f in _FIELDS}
     flags = {f: long.pivot(index="date", columns="isin", values=f)
                      .reindex(columns=isins).astype(bool)
-             for f in ("tradeable", "stale", "bad_tick", "filled")}
+             for f in ("tradeable", "stale", "bad_tick", "filled", "member")}
 
     panel = Panel(symbols=universe.set_index("isin")["symbol"], **frames, **flags)
 
@@ -335,6 +353,16 @@ def quality_report(cfg: Config, panel: Panel, prices: pd.DataFrame,
     applied = overrides[overrides["applied"].astype(bool)]
     flagged = overrides[~overrides["applied"].astype(bool)]
 
+    # A8's two exclusion routes, split back out: "no name traded" and "hand-excluded on
+    # evidence" are different claims, and blending them would hide the second.
+    overridden = calendar.overridden_days(cfg)
+    zero_volume = phantoms.difference(overridden)
+    phantom_rows = pd.read_csv(cfg["clean.phantom_day_overrides"])
+    overrides_block = "\n".join(
+        f"- `{r.date}` — **{r.reason}**. {r.evidence}"
+        for r in phantom_rows[phantom_rows["applied"].astype(bool)].itertuples()
+    ) or "_none_"
+
     def tbl(df: pd.DataFrame, cols: list[str]) -> str:
         head = "| " + " | ".join(cols) + " |\n|" + "---|" * len(cols) + "\n"
         rows = "".join("| " + " | ".join(str(r[c]) for c in cols) + " |\n"
@@ -360,15 +388,31 @@ Generated from snapshot `as_of = {as_of}`. Every figure below is computed by
 
 ## Calendar (A8)
 
-Union of days any name printed, minus days on which no name in the universe traded.
-**{len(phantoms)} days excluded** as market holidays for which Yahoo emitted a bar
-with a price on 189-200 names and zero volume on every one:
+Union of days any name printed, minus days that are not trading sessions.
+**{len(phantoms)} days excluded** by two separate routes, reported separately because
+they rest on different evidence.
 
-{", ".join(f"`{d.date()}`" for d in phantoms)}
+**Route 1 — the volume filter ({len(zero_volume)} days).** Yahoo emitted a bar with a
+price on 189-200 names and zero volume on every one:
+
+{", ".join(f"`{d.date()}`" for d in zero_volume)}
 
 All four fall inside the 2026 stress window. Two genuine Diwali Muhurat sessions
 (2019-10-27, 2020-11-14) are retained: they carry real volume across 174-178 names,
 and `^NSEI` omits both.
+
+**Route 2 — hand-excluded on evidence ({len(overridden)} day{"" if len(overridden)==1 else "s"}).** The volume filter
+keeps these, because "at least one name traded" is satisfied, but they are not sessions.
+Listed in `{cfg["clean.phantom_day_overrides"]}` with the evidence per row; a row acts
+only when `applied` is true.
+
+{overrides_block}
+
+This route exists because A8's rule is stated as *at least one* name trading, and a
+stale bar can clear that bar with two. The threshold was not loosened into a
+participation fraction — see `DECISIONS.md` A8. **The cost of that choice, stated
+plainly: the next such bar is caught only if someone looks.** `A11` below (10+ identical
+closes) is the tripwire most likely to catch one.
 
 ## Corporate actions (A12, A16)
 

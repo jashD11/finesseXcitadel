@@ -51,8 +51,13 @@ def panel() -> Panel:
     # A10 is computed the same way `clean.flag_zero_volume` computes it, from t-1.
     tradeable = (frames["volume"].shift(1) > 0) & close.notna()
 
+    # A17: the synthetic panel has no index to belong to, so every name is a member
+    # throughout and the membership gate is a no-op here. Tests that care about
+    # point-in-time membership set this frame themselves.
+    member = pd.DataFrame(True, index=days, columns=isins)
+
     return Panel(symbols=pd.Series(tickers, index=isins), tradeable=tradeable,
-                 **frames, **flags)
+                 member=member, **frames, **flags)
 
 
 @pytest.fixture

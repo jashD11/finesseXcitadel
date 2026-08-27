@@ -62,6 +62,34 @@ def _investable(cfg: Config, value: float, rate: float) -> float:
     return value * (1.0 - multiple * rate)
 
 
+def _weighting_rule(cfg: Config) -> str:
+    """
+    B3: `reset` puts all 10 back to 1/10 at every rebalance; `drift` leaves retained
+    names alone and trades only entries and exits.
+
+    Read through a helper rather than inline so the two callers -- this engine and the
+    batch engine in `noise.py` -- cannot disagree about what the flag means. If they
+    disagreed, `assert_engine_equivalence` would fail, which is the point.
+    """
+    return "reset" if bool(cfg["weighting.reset_to_target"]) else "drift"
+
+
+def _deployable(cfg: Config, cash: float, rate: float) -> float:
+    """
+    B3-r: under drift the B12 reserve applies to the cash being deployed, not to the book.
+
+    Taking the haircut against total book value would require selling part of a *retained*
+    position to fund the reserve, which contradicts the one thing drift is defined to do.
+    Conservative by the same margin B12 chose: the true requirement is roughly 1 x rate on
+    the buys, since the sell-side cost is already out of `cash` by the time this is called.
+    """
+    rule = cfg["execution.cost_reserve"]
+    if rule != "worst_case_gross_turnover":
+        raise ConfigError(f"B12 froze 'worst_case_gross_turnover'; got {rule!r}")
+    multiple = float(cfg["execution.cost_reserve_multiple"])
+    return max(cash * (1.0 - multiple * rate), 0.0)
+
+
 def _target_shares(cfg: Config, names: list[str], opens: pd.Series,
                    value: float) -> pd.Series:
     """Equal-notional target, converted to share counts under B4."""
@@ -79,13 +107,29 @@ def _target_shares(cfg: Config, names: list[str], opens: pd.Series,
 
 
 def run(cfg: Config, panel: Panel, holdings_map: dict[pd.Timestamp, list[str]],
-        capital: float, start: pd.Timestamp, end: pd.Timestamp) -> BacktestResult:
+        capital: float, start: pd.Timestamp, end: pd.Timestamp,
+        events: dict[pd.Timestamp, list[str]] | None = None) -> BacktestResult:
     """
     Execute a holdings map.
 
-    At each rebalance date the book is marked at that day's open, split equally across
-    the named stocks, and traded to the target; costs are charged on traded notional
-    both sides. Between rebalances nothing trades and NAV follows the closes.
+    At each rebalance date the book is marked at that day's open and traded to a target;
+    costs are charged on traded notional both sides. Between rebalances nothing trades and
+    NAV follows the closes.
+
+    B3 selects how the target is formed, and this engine is agnostic to both the signal
+    and the weighting:
+
+    - ``reset``  — every named stock goes to 1/10 of the marked book value.
+    - ``drift``  — retained names keep their drifted share count untouched; only exits and
+      entries trade, with exit proceeds funding the entries.
+
+    Under drift the first rebalance has no incumbents, so all ten names are entries and
+    the two rules agree exactly. `tests/test_accounting.py` pins that.
+
+    ``events`` is the one exception to "nothing trades between rebalances": a mapping of
+    date -> names to sell in full at that day's open, proceeds held as cash until the next
+    rebalance. It carries no signal -- an ex-date and an index-review effective date are
+    both published facts -- so the engine stays signal-agnostic. See `src/events.py`.
     """
     if cfg["execution.nav_start_convention"] != "capital_at_first_rebalance_open":
         raise ConfigError(f"B7 froze 'capital_at_first_rebalance_open'; "
@@ -96,6 +140,9 @@ def run(cfg: Config, panel: Panel, holdings_map: dict[pd.Timestamp, list[str]],
 
     rate = float(cfg["mandate.cost_bps"]) / 10_000.0
     charge_build = bool(cfg["execution.charge_initial_build"])
+    rule = _weighting_rule(cfg)
+    events = {pd.Timestamp(d): list(v) for d, v in (events or {}).items()}
+    event_days = sorted(events)
 
     rebalances = [d for d in sorted(holdings_map) if start <= d <= end]
     assert rebalances, f"no rebalance dates in [{start.date()}, {end.date()}]"
@@ -122,8 +169,29 @@ def run(cfg: Config, panel: Panel, holdings_map: dict[pd.Timestamp, list[str]],
         names = list(holdings_map[day])
         assert len(names) == len(set(names)), f"duplicate name in the book on {day.date()}"
         target = pd.Series(0.0, index=isins)
-        target.loc[names] = _target_shares(cfg, names, opens,
-                                           _investable(cfg, value, rate))
+
+        if rule == "reset":
+            target.loc[names] = _target_shares(cfg, names, opens,
+                                               _investable(cfg, value, rate))
+        else:
+            # B3 drift. Retained names keep their exact share count and are not traded at
+            # all -- not even re-floored. Exits sell in full; their proceeds, net of the
+            # sell-side cost, plus existing cash fund the entries, split equally.
+            # `> 0` and not `!= 0` -- long-only, so they agree, but `noise._run_batch`
+            # tests the same way and the two engines must not drift apart on a detail
+            # the equivalence assertion would only catch by luck.
+            held = shares > 0.0
+            retained = [n for n in names if held[n]]
+            entering = [n for n in names if not held[n]]
+            target.loc[retained] = shares.reindex(retained)
+
+            exiting = shares.index[held & ~shares.index.isin(names)]
+            proceeds = float((shares.reindex(exiting) * opens.reindex(exiting)).sum())
+            sell_cost = abs(proceeds) * rate if charge_build or i > 0 else 0.0
+            if entering:
+                target.loc[entering] = _target_shares(
+                    cfg, entering, opens,
+                    _deployable(cfg, cash + proceeds - sell_cost, rate))
 
         delta = target - shares
         traded = delta[delta != 0.0]
@@ -153,12 +221,51 @@ def run(cfg: Config, panel: Panel, holdings_map: dict[pd.Timestamp, list[str]],
                 "cost": float(cost_per_trade[isin]),
             })
 
-        # Hold this state until the next rebalance (or the end of the window).
+        # Hold this state until the next rebalance (or the end of the window), except
+        # where a forced exit interrupts it and splits the segment in two.
         stop = rebalances[i + 1] if i + 1 < len(rebalances) else None
         segment = days[days >= day] if stop is None else days[(days >= day) & (days < stop)]
-        holdings.loc[segment, :] = shares.to_numpy()
-        cash_series.loc[segment] = cash
         costs.loc[day] = total_cost
+
+        # An event landing on the rebalance date itself is already expressed by that
+        # day's targets, so only events strictly inside the segment can fire.
+        seg_set = set(segment)
+        cursor = day
+        for e in [d for d in event_days if d > day and d in seg_set]:
+            block = segment[(segment >= cursor) & (segment < e)]
+            holdings.loc[block, :] = shares.to_numpy()
+            cash_series.loc[block] = cash
+
+            exiting_now = [n for n in events[e] if shares[n] != 0.0]
+            if exiting_now:
+                e_open = panel.open.loc[e]
+                assert e_open.reindex(exiting_now).notna().all(), \
+                    f"forced exit on {e.date()} has no open price"
+                delta = -shares.reindex(exiting_now)
+                notional_e = delta * e_open.reindex(exiting_now)
+                cost_e = notional_e.abs() * rate
+                cash -= float(notional_e.sum()) + float(cost_e.sum())
+                assert cash >= -1e-6, (
+                    f"negative cash {cash:,.2f} after forced exit on {e.date()}"
+                )
+                shares.loc[exiting_now] = 0.0
+                costs.loc[e] += float(cost_e.sum())
+                for isin in exiting_now:
+                    trade_rows.append({
+                        "date": e,
+                        "isin": isin,
+                        "symbol": panel.symbols[isin],
+                        "side": "SELL",
+                        "shares": float(delta[isin]),
+                        "price": float(e_open[isin]),
+                        "notional": float(notional_e[isin]),
+                        "cost": float(cost_e[isin]),
+                    })
+            cursor = e
+
+        tail = segment[segment >= cursor]
+        holdings.loc[tail, :] = shares.to_numpy()
+        cash_series.loc[tail] = cash
 
     closes = panel.close.loc[days]
     # `closes[mask]` would blank the un-held cells to NaN and check those instead.

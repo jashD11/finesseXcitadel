@@ -83,8 +83,22 @@ def test_frozen_decisions_are_present_and_not_null():
                 "fetch.start", "eligibility.require_full_window",
                 "signal.formation_lag_days", "weighting.reset_to_target",
                 "noise.n_draws", "noise.rebalanced", "noise.replacement",
-                "metrics.trade_basis", "mandate.stress_start"):
+                "metrics.trade_basis", "mandate.stress_start",
+                # B1 is FROZEN (amended 2026-08-27) and was missing from this list.
+                "execution.rebalance_calendar",
+                # A8's rider: the override file must be declared, not implied.
+                "clean.phantom_day_overrides"):
         assert cfg[key] is not None
+
+
+def test_the_configured_calendar_is_one_the_code_supports():
+    """
+    Guards the seam B1's amendment created: `config.yaml` names a cadence and
+    `src/calendar.py` dispatches it. A typo here would not be caught by the KNOWN-key
+    check, which validates key names and not values.
+    """
+    from src.calendar import supported_calendars
+    assert load()["execution.rebalance_calendar"] in supported_calendars()
 
 
 def test_no_get_with_default_anywhere_in_src():

@@ -37,8 +37,6 @@ PENDING: dict[str, str] = {
     "composite.missing_feature_policy": "C5",
     "composite.reversal_sign": "C8",
     "composite.feature_weights": "C9",
-    # Documentation-only: adjusted prices already handle the mechanics.
-    "execution.corporate_action_mode": "B10",
 }
 
 # Nulls that are not decisions. Each needs a stated meaning.
@@ -55,12 +53,14 @@ KNOWN: set[str] = {
     "mandate.start", "mandate.end", "mandate.stress_start", "mandate.stress_end",
     "universe.nifty100_url", "universe.midcap100_url", "universe.expected_per_list",
     "universe.expected_total", "universe.yahoo_suffix", "universe.identity_key",
+    "universe.press_release_dir", "universe.membership_overrides",
     "fetch.source", "fetch.start", "fetch.end", "fetch.indices", "fetch.batch_size",
     "fetch.request_pause_s", "fetch.max_retries", "fetch.user_agent",
     "prices.return_basis", "prices.price_field", "prices.execution_field",
     "clean.trading_calendar", "clean.ffill_max_days", "clean.zero_volume_policy",
     "clean.stale_price_n", "clean.bad_tick_abs_return", "clean.liquidity_floor",
     "clean.cache_immutable", "clean.corporate_action_overrides",
+    "clean.phantom_day_overrides",
     "eligibility.require_full_window", "eligibility.min_eligible",
     "signal.lookback_unit", "signal.lookback", "signal.skip", "signal.return_type",
     "signal.formation_lag_days",

@@ -3,6 +3,10 @@
 data/raw/*.parquet
 data/clean/*.parquet
 
+# NOT ignored, deliberately: data/raw/press_releases/*.pdf (~14 MB). Those 27 documents
+# are the evidence behind the point-in-time universe (A17) and the only thing that makes
+# the membership reconstruction auditable by someone who did not run the fetch.
+
 # Generated artefacts
 output/
 __pycache__/

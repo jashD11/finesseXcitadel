@@ -38,7 +38,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from src.backtest import BacktestResult
+from src.backtest import BacktestResult, _weighting_rule
 from src.clean import Panel
 from src.config import Config
 from src.decisions import ConfigError
@@ -51,8 +51,14 @@ class NoiseBand:
     master_seed: int
     n_draws: int
 
-    def quarterly_returns(self) -> np.ndarray:
-        """(n_periods, n_draws). The risk side of the band, from the same marks."""
+    def period_returns(self) -> np.ndarray:
+        """
+        (n_periods, n_draws) rebalance-to-rebalance returns. The risk side of the band.
+
+        Named `period_` and not `quarterly_`: the arithmetic is `marks[1:]/marks[:-1]-1`
+        and has always been cadence-agnostic, but the old name asserted a calendar the
+        `FREQ` grid does not use.
+        """
         return self.marks[1:] / self.marks[:-1] - 1.0
 
     def return_per_unit_risk(self, years: float) -> np.ndarray:
@@ -64,12 +70,16 @@ class NoiseBand:
         bull market is systematically more volatile than a random one, so raw PNL alone
         cannot separate a better signal from a riskier one.
 
-        Estimated from ~20 quarterly observations, so the volatility term is noisy;
-        treat the resulting percentile as indicative, not precise.
+        Frequency-agnostic: `periods` is the number of rebalance marks this band
+        actually has, not a fixed 20, so the annualisation is correct at any cadence.
+        The *precision* is not — at quarterly this rests on ~20 observations and the
+        resulting percentile is indicative only. At monthly (60), weekly (262) and daily
+        (1,235) it is far better determined, which is an asymmetry `04_noise.py` prints
+        rather than hides.
         """
-        periods_per_year = self.marks.shape[0] - 1
+        periods = self.marks.shape[0] - 1
         cagr = (self.marks[-1] / self.marks[0]) ** (1.0 / years) - 1.0
-        vol = self.quarterly_returns().std(axis=0, ddof=1) * np.sqrt(periods_per_year / years)
+        vol = self.period_returns().std(axis=0, ddof=1) * np.sqrt(periods / years)
         return cagr / vol
 
     @property
@@ -105,8 +115,45 @@ def _rebalance_inputs(cfg: Config, panel: Panel, dates: pd.DatetimeIndex,
     return np.nan_to_num(opens), np.nan_to_num(final_close), last_day
 
 
+def _segment_events(panel: Panel, dates: pd.DatetimeIndex,
+                    events: dict[pd.Timestamp, list[str]] | None,
+                    end: pd.Timestamp) -> list[list[tuple[np.ndarray, np.ndarray]]]:
+    """
+    Per rebalance segment, the forced exits to apply as (column positions, open prices).
+
+    Mirrors `backtest.run` exactly: an event landing on the rebalance date itself is
+    already expressed by that day's targets, so only events strictly inside the segment
+    fire. The band has to apply the same rule as the arm it adjudicates -- a strategy
+    that dumps a name mid-quarter scored against a band that cannot would be measuring
+    the rule, not the selection.
+    """
+    if not events:
+        return [[] for _ in dates]
+
+    position = {isin: i for i, isin in enumerate(panel.isins)}
+    day_set = set(panel.dates)
+    out: list[list[tuple[np.ndarray, np.ndarray]]] = []
+    for r, day in enumerate(dates):
+        stop = dates[r + 1] if r + 1 < len(dates) else None
+        per_segment = []
+        for e in sorted(events):
+            if e <= day or e > end or e not in day_set:
+                continue
+            if stop is not None and e >= stop:
+                continue
+            cols = np.array([position[n] for n in events[e] if n in position], dtype=int)
+            if not len(cols):
+                continue
+            prices = panel.open.loc[e].to_numpy(dtype=float)[cols]
+            per_segment.append((cols, np.nan_to_num(prices)))
+        out.append(per_segment)
+    return out
+
+
 def _run_batch(cfg: Config, opens: np.ndarray, final_close: np.ndarray,
-               picks: list[np.ndarray], capital: float) -> np.ndarray:
+               picks: list[np.ndarray], capital: float,
+               seg_events: list[list[tuple[np.ndarray, np.ndarray]]] | None = None
+               ) -> np.ndarray:
     """
     The batch engine: ``D`` portfolios advanced together through one holdings schedule.
 
@@ -118,10 +165,15 @@ def _run_batch(cfg: Config, opens: np.ndarray, final_close: np.ndarray,
 
     ``picks[r]`` is a (D, k) array of *column positions* chosen at rebalance ``r``.
     Returns final PNL per draw and the (R+1, D) value marked at each rebalance open.
+
+    Both B3 weighting rules live here, because the band has to be built on the *same*
+    rule as the arm it adjudicates. A drift arm scored against a reset band would violate
+    the "same engine" commitment that makes every ``z`` in the ledger meaningful.
     """
     rate = float(cfg["mandate.cost_bps"]) / 10_000.0
     reserve = 1.0 - float(cfg["execution.cost_reserve_multiple"]) * rate
     charge_build = bool(cfg["execution.charge_initial_build"])
+    rule = _weighting_rule(cfg)
 
     n_draws = picks[0].shape[0]
     n_names = opens.shape[1]
@@ -143,10 +195,35 @@ def _run_batch(cfg: Config, opens: np.ndarray, final_close: np.ndarray,
         # D, which keeps `chunk_size` a pure memory knob.
         value = (shares * day_open).sum(axis=1) + cash
         marks[r] = value
-        per_name = value * reserve / chosen.shape[1]
 
         target = np.zeros_like(shares)
-        target[rows, chosen] = np.floor(per_name[:, None] / chosen_open)
+        if rule == "reset":
+            per_name = value * reserve / chosen.shape[1]
+            target[rows, chosen] = np.floor(per_name[:, None] / chosen_open)
+        else:
+            # B3 drift, mirroring `backtest.run` line for line. A name is "held" when its
+            # share count is non-zero, so a selected name that floored to zero shares last
+            # time counts as an entry now -- the same test the scalar engine applies.
+            selected = np.zeros_like(shares, dtype=bool)
+            selected[rows, chosen] = True
+            held = shares > 0.0
+
+            target[selected & held] = shares[selected & held]      # retained: untouched
+            proceeds = (np.where(held & ~selected, shares, 0.0) * day_open).sum(axis=1)
+            sell_cost = np.abs(proceeds) * rate if (charge_build or r > 0) \
+                else np.zeros(n_draws)
+
+            entering = selected & ~held
+            n_entering = entering.sum(axis=1)
+            # B3-r: the reserve applies to deployable cash, not to book value.
+            deployable = np.maximum((cash + proceeds - sell_cost) * reserve, 0.0)
+            per_name = np.divide(deployable, n_entering,
+                                 out=np.zeros_like(deployable),
+                                 where=n_entering > 0)
+            bought = np.floor(np.divide(per_name[:, None], day_open,
+                                        out=np.zeros_like(shares),
+                                        where=day_open > 0))
+            target[entering] = bought[entering]
 
         notional = (target - shares) * day_open
         cost = np.abs(notional).sum(axis=1) * rate if (charge_build or r > 0) \
@@ -155,12 +232,22 @@ def _run_batch(cfg: Config, opens: np.ndarray, final_close: np.ndarray,
         assert (cash >= -1e-6).all(), f"negative cash at rebalance {r}"
         shares = target
 
+        # Forced exits inside this segment (src/events.py). Reducing over the handful of
+        # exited columns rather than over N keeps the accumulation order independent of
+        # D, for the same reason the mark above avoids a BLAS matvec.
+        for cols, prices in (seg_events[r] if seg_events else ()):
+            gross = shares[:, cols] * prices
+            cash = cash + gross.sum(axis=1) - np.abs(gross).sum(axis=1) * rate
+            assert (cash >= -1e-6).all(), f"negative cash after a forced exit in segment {r}"
+            shares[:, cols] = 0.0
+
     marks[-1] = (shares * final_close).sum(axis=1) + cash
     return marks[-1] - float(capital), marks
 
 
 def band(cfg: Config, panel: Panel, eligibility: pd.DataFrame,
-         dates: pd.DatetimeIndex, capital: float, end: pd.Timestamp) -> NoiseBand:
+         dates: pd.DatetimeIndex, capital: float, end: pd.Timestamp,
+         events: dict[pd.Timestamp, list[str]] | None = None) -> NoiseBand:
     """
     D2 (frozen): 10,000 draws of 10 names, resampled at every rebalance date, without
     replacement, from the as-of eligible set, charged the same costs, through the same
@@ -185,6 +272,7 @@ def band(cfg: Config, panel: Panel, eligibility: pd.DataFrame,
     k = int(cfg["mandate.book_size"])
 
     opens, final_close, _ = _rebalance_inputs(cfg, panel, dates, end)
+    seg_events = _segment_events(panel, dates, events, end)
     frame = [np.flatnonzero(row) for row in eligibility.to_numpy()]
     for r, positions in enumerate(frame):
         assert len(positions) >= k, f"only {len(positions)} eligible at rebalance {r}"
@@ -200,14 +288,16 @@ def band(cfg: Config, panel: Panel, eligibility: pd.DataFrame,
         picks = [np.stack([generators[d].choice(positions, size=k, replace=False)
                            for d in range(lo, hi)])
                  for positions in frame]
-        pnl[lo:hi], marks[:, lo:hi] = _run_batch(cfg, opens, final_close, picks, capital)
+        pnl[lo:hi], marks[:, lo:hi] = _run_batch(cfg, opens, final_close, picks,
+                                                 capital, seg_events)
 
     return NoiseBand(pnl=pnl, marks=marks, master_seed=master_seed, n_draws=n_draws)
 
 
 def assert_engine_equivalence(cfg: Config, panel: Panel, v0: BacktestResult,
                               holdings_map: dict[pd.Timestamp, list[str]],
-                              capital: float, end: pd.Timestamp) -> None:
+                              capital: float, end: pd.Timestamp,
+                              events: dict[pd.Timestamp, list[str]] | None = None) -> None:
     """
     Run V0's own holdings through the batch path at D=1; the PNL must match
     `backtest.run` to the rupee.
@@ -218,14 +308,16 @@ def assert_engine_equivalence(cfg: Config, panel: Panel, v0: BacktestResult,
     """
     dates = pd.DatetimeIndex(sorted(holdings_map))
     opens, final_close, _ = _rebalance_inputs(cfg, panel, dates, end)
+    seg_events = _segment_events(panel, dates, events, end)
     position = {isin: i for i, isin in enumerate(panel.isins)}
     picks = [np.array([[position[name] for name in holdings_map[day]]]) for day in dates]
 
-    batch = float(_run_batch(cfg, opens, final_close, picks, capital)[0][0])
+    batch = float(_run_batch(cfg, opens, final_close, picks, capital, seg_events)[0][0])
     scalar = float(v0.nav.iloc[-1]) - float(capital)
     gap = abs(batch - scalar)
     assert gap <= 0.01, (
-        f"batch and scalar engines disagree by \u20b9{gap:,.4f} "
+        f"batch and scalar engines disagree by \u20b9{gap:,.4f} under "
+        f"{_weighting_rule(cfg)} weighting "
         f"(batch \u20b9{batch:,.2f}, backtest.run \u20b9{scalar:,.2f}) - the noise band "
         f"would be measuring plumbing, not selection"
     )

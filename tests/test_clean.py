@@ -16,9 +16,12 @@ from src.decisions import ConfigError
 AS_OF = "2026-08-24"
 
 # Measured against data/raw/prices_20260824.parquet before clean.py existed.
-N_DAYS = 1787
+N_DAYS = 1786
 N_NAMES = 200
+# A8 route 1: Yahoo printed a bar, not one name in the universe traded.
 PHANTOMS = ["2026-01-15", "2026-05-01", "2026-05-28", "2026-06-26"]
+# A8 route 2 (rider): the volume filter passes these, but they are not sessions either.
+STALE_BARS = ["2025-03-18"]
 MUHURAT = ["2019-10-27", "2020-11-14"]
 
 
@@ -60,9 +63,41 @@ def test_phantom_days_excluded(cfg, raw):
     """Yahoo emits a bar on these market holidays: a price on 189-200 names, zero
     volume on every one. All four fall inside the 2026 stress window."""
     days = calendar.trading_days(cfg, raw[0])
-    assert calendar.phantom_days(raw[0]).tolist() == [pd.Timestamp(d) for d in PHANTOMS]
-    for d in PHANTOMS:
+    expected = sorted(pd.Timestamp(d) for d in PHANTOMS + STALE_BARS)
+    assert calendar.phantom_days(cfg, raw[0]).tolist() == expected
+    for d in PHANTOMS + STALE_BARS:
         assert pd.Timestamp(d) not in days
+
+
+def test_stale_bar_is_excluded_by_evidence_not_by_the_volume_filter(cfg, raw):
+    """
+    A8's rider. 2025-03-18 carries prices for 193 names, of which 191 repeat the
+    previous close exactly, and only 2 names traded — so `max(volume) > 0` holds and
+    the volume filter keeps it. It is excluded by the override file instead.
+
+    Without this, A10 sees 2 tradeable names on 2025-03-19 and B9's assertion fires
+    for any cadence that evaluates every trading day.
+    """
+    prices = raw[0]
+    stale = pd.Timestamp(STALE_BARS[0])
+    day = prices[prices["date"] == stale]
+    assert day["volume"].max() > 0, "the volume filter alone would have caught it"
+    assert (day["volume"] > 0).sum() == 2
+
+    assert stale in calendar.overridden_days(cfg)
+    assert stale not in calendar.trading_days(cfg, prices)
+
+
+def test_an_override_row_is_inert_until_applied(cfg, raw, tmp_path, monkeypatch):
+    """Evidence-carrying, like A16: a day can be recorded as suspected without acting."""
+    frame = pd.read_csv(cfg["clean.phantom_day_overrides"])
+    frame["applied"] = False
+    path = tmp_path / "phantom_days.csv"
+    frame.to_csv(path, index=False)
+    monkeypatch.setitem(cfg._flat, "clean.phantom_day_overrides", str(path))
+
+    assert len(calendar.overridden_days(cfg)) == 0
+    assert pd.Timestamp(STALE_BARS[0]) in calendar.trading_days(cfg, raw[0])
 
 
 def test_muhurat_sessions_retained(cfg, raw):
@@ -149,6 +184,7 @@ def test_back_adjustment_preserves_non_boundary_returns():
                     low=close.copy(), volume=close.copy() * 0 + 1000,
                     tradeable=close.notna(), stale=close.notna(),
                     bad_tick=close.notna(), filled=close.notna(),
+                    member=close.notna(),
                     symbols=pd.Series({isin: "TEST"}))
     before = p.close.pct_change()
     ov = pd.DataFrame([dict(symbol="TEST", isin=isin, action="Bonus 3:1",

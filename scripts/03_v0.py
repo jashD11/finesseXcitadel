@@ -6,6 +6,10 @@ The null model (CLAUDE.md §4): 12-1 momentum, top 10, equal weight, quarterly, 
 buffer, no optimiser, zero fitted parameters. Everything after this is measured as a
 delta against the number it prints.
 
+`--calendar` and `--weighting` run one cell of §11's `FREQ` grid through the same engine,
+writing under output/sweep/ so a variant can never overwrite the V0 baseline the ledger
+measures against.
+
 Writes CSV artefacts, not a workbook: the guidelines require a GitHub repo and a 5-6
 page report, and Excel appears nowhere in them.
 """
@@ -20,10 +24,11 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src import backtest, calendar, clean, features, metrics, select, universe  # noqa: E402
+from src import (backtest, calendar, clean, events, features, metrics,  # noqa: E402
+                 select, universe)
 from src.config import load  # noqa: E402
 
-AS_OF = "2026-08-24"
+AS_OF = "2026-08-28"
 
 # B8 (frozen): the stress window is a *separate* backtest that restarts with the full
 # capital on the first trading day of 2026. Nothing carries over from 2021-25 — no
@@ -33,10 +38,51 @@ WINDOWS = {"main": ("mandate.start", "mandate.end"),
            "stress": ("mandate.stress_start", "mandate.stress_end")}
 
 
+def build_events(cfg, panel) -> dict[pd.Timestamp, list[str]]:
+    """
+    Forced mid-cycle exits (B10 / A18, `src/events.py`).
+
+    Today this is the A16 ex-date source alone. The index-exit source joins it here once
+    membership is point-in-time, which is why `events.merge` exists.
+    """
+    return events.ex_date_events(cfg, panel, clean.load_overrides(cfg))
+
+
 def _tagged(name: str, tag: str) -> str:
     """`nav.csv` -> `nav_stress.csv`, so a stress run never overwrites the scored one."""
     stem, _, ext = name.rpartition(".")
     return f"{stem}{tag}.{ext}"
+
+
+def apply_overrides(cfg, calendar_name: str | None, weighting: str | None) -> str:
+    """
+    Point the config at one cell of the `FREQ` grid and return a directory label.
+
+    Returns "" for the baseline config, which keeps V0's artefacts exactly where they
+    have always been. Any *other* cell writes under `output/sweep/<label>/`, because
+    `output.nav` and friends are bare filenames -- without this a second cadence would
+    silently overwrite the entire V0 baseline, and the ledger's `Δ vs V0` would be
+    measured against a file that no longer holds V0.
+    """
+    if calendar_name is not None:
+        if calendar_name not in calendar.supported_calendars():
+            raise SystemExit(f"[v0] unsupported --calendar {calendar_name!r}; "
+                             f"expected one of {calendar.supported_calendars()}")
+        cfg._flat["execution.rebalance_calendar"] = calendar_name
+    if weighting is not None:
+        cfg._flat["weighting.reset_to_target"] = (weighting == "reset")
+
+    cadence = str(cfg["execution.rebalance_calendar"]).replace("_first_trading_day", "")
+    rule = "reset" if bool(cfg["weighting.reset_to_target"]) else "drift"
+    if calendar_name is None and weighting is None:
+        return ""
+    return f"{cadence}_{rule}"
+
+
+def output_dir(cfg, label: str):
+    """`output/` for the baseline, `output/sweep/<label>/` for a grid cell."""
+    out = cfg.resolved_path("paths.output")
+    return out if not label else out / "sweep" / label
 
 
 def build_holdings(cfg, panel, dates) -> dict[pd.Timestamp, list[str]]:
@@ -66,11 +112,16 @@ def main() -> int:
     ap.add_argument("--window", choices=sorted(WINDOWS), default="main",
                     help="main = 2021-25 (scored); stress = Jan-Jun 2026 (B8, rejection "
                          "filter only)")
+    ap.add_argument("--calendar", default=None,
+                    help="override execution.rebalance_calendar (FREQ grid, CLAUDE.md §11)")
+    ap.add_argument("--weighting", default=None, choices=("reset", "drift"),
+                    help="override weighting.reset_to_target (B3)")
     args = ap.parse_args()
     start_key, end_key = WINDOWS[args.window]
     tag = "" if args.window == "main" else "_stress"
 
     cfg = load()
+    label = apply_overrides(cfg, args.calendar, args.weighting)
     pending = cfg.pending()
     print(f"[v0] config OK — {len(pending)} decisions still open "
           f"({', '.join(sorted(set(pending.values())))}), none blocking V0")
@@ -81,6 +132,9 @@ def main() -> int:
     start = pd.Timestamp(cfg[start_key])
     end = pd.Timestamp(cfg[end_key])
     print(f"[v0] window '{args.window}': {start.date()} -> {end.date()}")
+    print(f"[v0] calendar {cfg['execution.rebalance_calendar']} | weighting "
+          f"{'reset' if cfg['weighting.reset_to_target'] else 'drift'}"
+          f"{f' | -> output/sweep/{label}/' if label else ''}")
     print(f"[v0] panel {panel.close.shape[0]} days x {panel.close.shape[1]} names")
 
     dates = calendar.rebalance_dates(cfg, panel.dates, start, end)
@@ -89,7 +143,12 @@ def main() -> int:
           f"eligible names {eligibility.sum(axis=1).min()}-{eligibility.sum(axis=1).max()}")
 
     holdings = build_holdings(cfg, panel, dates)
-    result = backtest.run(cfg, panel, holdings, capital, start, end)
+    forced = build_events(cfg, panel)
+    if forced:
+        n = sum(len(v) for v in forced.values())
+        print(f"[v0] {n} forced exit(s) declared on {len(forced)} date(s): "
+              f"{', '.join(str(d.date()) for d in sorted(forced))}")
+    result = backtest.run(cfg, panel, holdings, capital, start, end, forced)
     backtest.reconcile(result, panel, capital)
     print(f"[v0] reconciled: the trade log explains the NAV to within Rs 1")
 
@@ -129,7 +188,7 @@ def main() -> int:
         summary[f"benchmark_{name}_return"] = float(series.iloc[-1] / capital - 1.0)
         summary[f"benchmark_{name}_pnl"] = float(series.iloc[-1] - capital)
 
-    out = cfg.resolved_path("paths.output")
+    out = output_dir(cfg, label)
     out.mkdir(parents=True, exist_ok=True)
     result.nav.rename("nav").to_frame().join(
         result.cash.rename("cash")).join(
