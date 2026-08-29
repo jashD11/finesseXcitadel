@@ -61,6 +61,15 @@ work happens, not reconstructed afterwards.
 **Seeds.** Every stochastic operation takes an explicit seed and logs it. The noise band
 must be exactly reproducible.
 
+**Analysis notes get written down.** `NOTES.md` is the running notebook for reasoning that
+is neither a decision (`DECISIONS.md`) nor a configuration (§11): mechanism arguments,
+anomalies noticed in passing, hypotheses with the evidence for and against, and the
+occasional finding that a published conclusion rests on less than it appears to. Anything
+interesting enough to say out loud once is written there the same day, because the 5–6 page
+report is assembled from it and reconstructed reasoning is worse reasoning. Each entry is
+dated, states plainly which parts are measured and which are speculation, and names the
+in-sample test that would settle it.
+
 **Consistency.** Code, documentation and chart legends must agree. If a rule changes in
 code, grep for every place it's described in prose and fix those in the same pass.
 
@@ -616,6 +625,7 @@ rationalisation.
 config.yaml            every parameter. no number lives anywhere else
 CLAUDE.md              this file
 DECISIONS.md           the decision ledger — authoritative
+NOTES.md               analysis notebook — mechanism reasoning, raw material for the report
 src/
   config.py            load + validate; refuses a value for an open decision
   decisions.py         UnresolvedDecision, blocked()
