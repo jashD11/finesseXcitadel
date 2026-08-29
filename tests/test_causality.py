@@ -60,15 +60,75 @@ def test_formation_cutoff_rejects_a_non_trading_day():
         formation_cutoff(pd.Timestamp("2021-01-09"), days, lag=1)
 
 
-@pytest.mark.xfail(strict=True, reason="features.composite blocked on C3")
-def test_zscore_is_cross_sectional_not_time_series():
+def test_composite_is_cross_sectional_not_time_series(cfg):
     """
-    Defence #5. Shuffling the time axis must leave every per-date z-score unchanged.
-    A z computed across time for one name would move.
+    Defence #5, now that C17 has landed. The composite scores a single date's cross-section
+    and must not depend on the order the dates arrive in, nor on any other date at all.
+
+    Was `xfail(strict=True, reason="features.composite blocked on C3")` until 2026-08-30.
+    A ranking computed across time for one name would move when the rows are shuffled;
+    a cross-sectional one cannot see the other rows in the first place.
     """
-    from src.config import load
     from src.features import composite
-    composite(load(), pd.DataFrame())
+
+    rng = np.random.default_rng(20260830)
+    names = pd.Index([f"INE000{i:02d}01010" for i in range(12)], name="isin")
+    frame = pd.DataFrame({f: rng.normal(size=len(names)) for f in cfg["composite.features"]},
+                         index=names)
+
+    baseline = composite(cfg, frame)
+    reordered = composite(cfg, frame.sample(frac=1.0, random_state=7))
+    pd.testing.assert_series_equal(baseline, reordered.reindex(baseline.index))
+
+
+def test_composite_is_invariant_to_a_monotone_transform_of_one_feature(cfg):
+    """
+    The property that *defines* C17 and that a z-score composite could not satisfy.
+
+    Scaled ranks read only the ordering of a column, so cubing one feature, or scaling it
+    by 1000, must leave the book untouched. This is the cleanest available evidence that
+    what was implemented is the rule C17 specifies rather than something merely correlated
+    with it -- a numeric comparison against a stored expectation would pass for both.
+    """
+    from src.features import composite
+
+    rng = np.random.default_rng(20260830)
+    names = pd.Index([f"INE000{i:02d}01010" for i in range(30)], name="isin")
+    feats = list(cfg["composite.features"])
+    frame = pd.DataFrame({f: rng.normal(size=len(names)) for f in feats}, index=names)
+
+    baseline = composite(cfg, frame)
+    for transform in (lambda v: v ** 3, lambda v: 1000.0 * v, lambda v: np.expm1(v)):
+        bent = frame.copy()
+        bent[feats[0]] = transform(bent[feats[0]])
+        pd.testing.assert_series_equal(baseline, composite(cfg, bent))
+
+
+def test_composite_applies_the_configured_signs(cfg):
+    """
+    C14/C15. The signs live in `config.yaml` because a reversed one is the single V1 error
+    that leaves no trace -- the run completes, reconciles to the rupee and reports plausible
+    numbers while buying the opposite of what was intended. So it gets a test, not a comment.
+
+    Raising one name's value on a POSITIVE feature must raise its score; on a NEGATIVE
+    feature it must lower it. Read from config rather than hardcoded, so flipping a sign in
+    the config flips this test rather than leaving it silently agreeing.
+    """
+    from src.features import composite, signs
+
+    names = pd.Index([f"INE000{i:02d}01010" for i in range(10)], name="isin")
+    frame = pd.DataFrame({f: np.linspace(0.0, 1.0, len(names))
+                          for f in cfg["composite.features"]}, index=names)
+    target = names[0]
+
+    for feature, sign in signs(cfg).items():
+        lifted = frame.copy()
+        lifted.loc[target, feature] = 99.0          # now unambiguously the largest
+        delta = composite(cfg, lifted)[target] - composite(cfg, frame)[target]
+        if sign > 0:
+            assert delta > 0, f"{feature} has sign +1 but raising it lowered the score"
+        else:
+            assert delta < 0, f"{feature} has sign -1 but raising it raised the score"
 
 
 def test_selection_ignores_every_price_from_the_rebalance_date_onward(cfg, panel,

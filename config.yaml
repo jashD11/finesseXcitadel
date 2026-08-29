@@ -116,11 +116,60 @@ signal:
 
 # ── Composite (V1) ───────────────────────────────────────────────────────────
 composite:
-  zscore_population: null    # PENDING C3  — pooled vs within-index
-  winsor_z: null             # PENDING C4  — clip threshold, post-z
-  missing_feature_policy: null  # PENDING C5
-  reversal_sign: null        # PENDING C8  — momentum or reversal reading
-  feature_weights: null      # PENDING C9
+  # C10 FROZEN 2026-08-30 — three measurements, one concept each: how much it rose,
+  # how the rise arrived, where it sits against its own 252-day high. Residual momentum
+  # is deliberately absent (rho 0.883 with mom_12_1) and is a separate Phase 3 arm.
+  features: [mom_12_1, info_discreteness, drawdown_252]
+  # C14 / C15 FROZEN 2026-08-30. These live here, visible, rather than in a function
+  # body because a reversed sign on info_discreteness is the one V1 error that leaves no
+  # trace: the run completes, reconciles to the rupee, and reports plausible numbers
+  # while buying the opposite of what was intended. Low information discreteness is the
+  # predictive state (C14), so it enters negated; nearer the high scores higher (C15).
+  # Adding a feature means adding its sign to src/config.py KNOWN as well — intended,
+  # so a new column cannot arrive without a sign.
+  feature_signs:
+    mom_12_1: 1
+    info_discreteness: -1
+    drawdown_252: 1
+  market_proxy: equal_weight_eligible  # C11 FROZEN — not the cap-weighted index
+  residual_form: standardised          # C12 FROZEN — RM / (sd(eps)*sqrt(T))
+  beta_window: formation               # C13 FROZEN — the same 231-day window as F1
+  flat_day_policy: count_as_neither    # C16 NON-ISSUE — measured, rho 0.9997 vs the
+                                       # alternative. Zero-return days are neither up
+                                       # nor down and dilute %neg and %pos equally.
+  # No new window parameters: F8's 252-day peak window IS signal.lookback below, and
+  # F9's and beta's window IS the signal.lookback/signal.skip pair. V1 inherits V0's
+  # zero-fitted-parameter defence intact (C10).
+  # C17 FROZEN 2026-08-30 — each feature ranked across eligible names on the date and
+  # divided by N+1, then weighted and averaged. Never ranked across time for one stock.
+  # A z-composite over the same three features shares only 6.6/10 names, so this is a
+  # consequential choice, not a formality.
+  combination_rule: scaled_ranks
+  ranking_population: pooled_eligible  # C3 FROZEN — was `zscore_population`; there is no
+                                       # z-score under C17, and a key name that contradicts
+                                       # its own decision is the drift §2 forbids.
+  missing_feature_policy: ineligible   # C5 NON-ISSUE — cannot fire on the C10 features,
+                                       # which are pure price functions over a window
+                                       # eligibility already requires complete. Kept live
+                                       # for the first feature that CAN be missing.
+  winsor_z: null             # C4 DEAD — scaled ranks have no outliers to clip.
+  reversal_sign: null        # C8 DEAD — C10 excluded the reversal feature. The ambiguity
+                             # was never resolved; C8 reopens if a reversal arm is wanted.
+  use_buffer: false          # D13 — arm 1 runs strict top-10; `V1-buffer` overrides.
+  # C9 FROZEN 2026-08-30. Integers, normalised at use: `base` is exactly 1/3 each and
+  # `tilt` exactly 0.5/0.25/0.25, so no floating-point weight constant exists anywhere.
+  # `tilt` is a PRE-REGISTERED ARM declared before any V1 result was seen, not a response
+  # to one — see DECISIONS.md C9. Only these two vectors are ever tried.
+  active_weights: base
+  weight_vectors:
+    base:
+      mom_12_1: 1
+      info_discreteness: 1
+      drawdown_252: 1
+    tilt:
+      mom_12_1: 2
+      info_discreteness: 1
+      drawdown_252: 1
   buffer_enter_rank: 10      # CLAUDE.md §6
   buffer_exit_rank: 20       # CLAUDE.md §6
 

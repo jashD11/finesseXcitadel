@@ -80,6 +80,12 @@ Two arithmetic checks, both passing: the trade log rebuilds the closing NAV to w
 **₹1**, and the P&L of all 106 individual round trips sums to Total Net PNL with a
 **zero-rupee** gap.
 
+We also tried to beat this with a smarter stock-picking rule — a score combining three
+measurements rather than one — and **it lost, on all five versions we declared in advance**.
+Section 10a is that story. The numbers above are unchanged by it, which is the point: the
+attempt was written down before it was run, so its failure is a finding rather than an
+embarrassment to bury.
+
 ---
 
 ## 3 · The data, and five things wrong with it
@@ -618,6 +624,132 @@ after-the-fact.
 
 ---
 
+## 10a · We tried to improve the stock-picking rule, and it failed
+
+Everything up to here changes *when* we trade, not *what* we pick. The obvious next question
+is whether a smarter picking rule beats plain momentum. We built one, tested it properly,
+and it lost badly. This section is that story, because a negative result arrived at honestly
+is worth more than a marginal win arrived at by fishing.
+
+### What we added, and why those three things
+
+The baseline ranks stocks on one number: how much the stock rose over the past year,
+ignoring the most recent month. The idea was to score each stock on three things instead:
+
+- **How much it rose** — the original signal, unchanged.
+- **How steadily it rose.** A stock that climbed 60% through a hundred small daily gains is
+  different from one that jumped 60% on three big announcement days. There is published
+  research (Da, Gurun & Warachka, 2014) arguing the first kind keeps drifting upward,
+  because each small piece of news was too minor for investors to react to properly, while
+  the second kind was noticed and priced immediately. The authors call it the frog in the
+  pan: a frog dropped in boiling water jumps out, a frog in slowly heating water does not.
+- **How far it sits below its own one-year high.** A stock up 80% and sitting at its peak is
+  in a different position from one up 80% that has already given back 20%.
+
+Before building anything we ran a diagnostic to check these actually measure different
+things. They do — remarkably so. "How steadily it rose" is almost completely unrelated to
+both of the others. That was the green light.
+
+**The diagnostic also killed a fourth feature we had planned to include.** "Momentum with
+the market's move stripped out" sounds like a genuinely separate idea, but it picks 7.8 of
+the same 10 stocks as plain momentum. Including both would have been the same bet counted
+twice, dressed up as two ideas. We dropped it from the score and tested it separately
+instead.
+
+### How we tested it, and why the order matters
+
+Five versions were **written down in advance** — in the project's own ledger, with six
+predictions about what would happen — and only then run. That ordering is the whole point.
+If you run twenty variants and report the best one, you have found the luckiest variant, not
+the best rule. If you declare five before you look, whatever comes back is a result.
+
+One of the five deserves a note. We suspected the composite might underperform, and the
+tempting fix would be to weight the original momentum signal more heavily. Deciding to do
+that *after* seeing a disappointing number is fitting the answer to the test. So that
+version was declared up front, with its weights fixed, and run regardless.
+
+### What happened
+
+| Version | Total Net PNL | vs baseline |
+|---|---|---|
+| **Baseline: momentum alone** | **₹3,88,03,708** | — |
+| Composite, momentum weighted double | ₹2,11,58,779 | −₹1.76 Cr |
+| Market-adjusted momentum on its own | ₹1,78,33,244 | −₹2.10 Cr |
+| Composite, all three weighted equally | ₹1,31,92,525 | −₹2.56 Cr |
+| Composite, plus a rule to reduce churn | ₹1,22,09,183 | −₹2.66 Cr |
+
+Every version lost, and by margins far larger than the luck band from Section 6 — between
+3.5 and 5.2 times the width that separates a real effect from noise. There is no ambiguity
+to interpret here.
+
+**We checked for a bug before believing it.** The composite's chosen portfolio overlaps the
+baseline's by 3.35 stocks out of 10; a completely separate diagnostic written the day before,
+by a different route, had predicted 3.4. The code does what it claims. The signal is simply
+worse.
+
+### The most telling number
+
+Line up the three configurations by how much weight the original momentum signal carries:
+
+| Weight on momentum | Total Net PNL |
+|---|---|
+| one third | ₹1,31,92,525 |
+| one half | ₹2,11,58,779 |
+| all of it | ₹3,88,03,708 |
+
+Every unit of weight shifted *away* from the two new features and *onto* plain momentum
+earned money. That is much stronger than "the composite lost". It says the new features are
+not diluting a good signal with a harmless one — they are diluting it with something that
+actively costs money over this window.
+
+We stopped there rather than running a proper weight sweep to find the exact shape. Searching
+a space *after* seeing which direction pays is precisely the thing the pre-registration
+exists to prevent, and the answer it would produce is already visible: put all the weight on
+momentum, which is the baseline.
+
+### Why it failed — two reasons, and the flattering one is not enough
+
+**The first is the one the project predicted.** Every new version is *less volatile* than the
+baseline: around 20–22% annualised against the baseline's 26%. That is built into the
+features — ranking on "distance below the one-year high" systematically avoids jumpy stocks.
+And the competition scores raw profit, not risk-adjusted profit, so anything that reduces
+risk gives up profit. The project has said from the start that risk-reduction machinery is a
+handicap under this scoring rule. This is the first time we have watched it happen on live
+numbers rather than asserting it.
+
+**But that explanation alone is too kind to the composite.** If it were merely trading return
+for safety, it would at least look good on a risk-adjusted basis. It does not. Its Sharpe
+ratio falls from 1.43 to 0.84, and its worst peak-to-trough loss gets *worse*, from −31% to
+−41%. Lower volatility *and* a deeper drawdown is not a trade-off; it is just a worse
+portfolio. Over this window the two added features carry no demonstrated forecasting value
+at all.
+
+### The lesson we did not expect
+
+The diagnostic chose these features because they measure genuinely *different* things. That
+seemed like obvious good practice — do not count the same bet twice.
+
+It turns out to cut both ways. **A feature that is unrelated to your good signal and carries
+no information of its own does the most damage possible**, because it dilutes the good
+signal without pulling in the same direction at all. Had "how steadily it rose" been closely
+related to momentum, mixing it in could barely have hurt. It was nearly unrelated, so it hurt
+a great deal.
+
+Checking that your ingredients are different is a defence against double-counting. It is not
+evidence that each ingredient is worth having. We came close to reading it as though it were.
+
+### Where that leaves the submission
+
+The composite is **not adopted**. The submitted strategy remains the weekly-rebalanced
+momentum rule from Section 10 — which is exactly what we wrote down in advance would happen
+if every version lost. The new rule was declared a candidate, never a commitment.
+
+No rescue attempt was made: no re-weighting toward whatever won, no dropping the weakest
+feature and re-running, no switching the scoring method after the first one failed. Each
+would have been searching for a flattering answer after seeing the unflattering one.
+
+---
+
 ## 11 · Known biases, disclosed rather than buried
 
 **Survivorship / index inclusion — measured, and now largely removed.** This was the
@@ -726,8 +858,17 @@ a reconstruction that checks itself and two of our own published conclusions ove
 the process. Sections 6 through 9 supply the rest: the noise band, the risk-adjusted test,
 and the honest tension between the two windows.
 
-Also outstanding: pushing the repository to GitHub.
+**Section 10a is its second spine.** A five-version slate written down before it was run,
+every version measured against a yardstick built before it existed, every version reported
+including the four that lost worst. Panels see winning backtests constantly; they see far
+fewer projects that pre-declared a test and published the failure.
 
-Not planned: the machine-learning model. The attribution work shows the available headroom
-is smaller than it looked, and it would need a look-ahead defence we would then have to
-argue for. The composite-score variant (Section 4) remains the cheapest untried idea.
+Not planned: the machine-learning model. The attribution work already showed the available
+headroom was smaller than it looked, and Section 10a has now shown that three carefully
+chosen, genuinely distinct features could not beat a single one. A model searching a much
+larger space of the same kind of features, needing a look-ahead defence we would then have
+to argue for, is not a good use of the remaining time.
+
+Nothing in the decision register is open — 59 of 59 closed, the first time that has been
+true. Two of them are recorded as *dead* rather than answered, because the questions ceased
+to exist rather than being resolved, and each says so where it stands.

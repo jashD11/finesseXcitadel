@@ -30,18 +30,20 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG = REPO_ROOT / "config.yaml"
 
 # ── Pending decisions: dotted key -> decision ID in DECISIONS.md ──────────────
-PENDING: dict[str, str] = {
-    # V1 composite — none of these is reachable before V0 exists.
-    "composite.zscore_population": "C3",
-    "composite.winsor_z": "C4",
-    "composite.missing_feature_policy": "C5",
-    "composite.reversal_sign": "C8",
-    "composite.feature_weights": "C9",
-}
+# Empty since 2026-08-30: Phase 2 closed the last five (C3, C4, C5, C8, C9). Kept, and
+# still enforced, because the machinery is what makes a *future* open decision fail loudly
+# instead of running on a default — and because `cfg.pending()` returning {} is a claim the
+# ledger has to keep earning.
+PENDING: dict[str, str] = {}
 
 # Nulls that are not decisions. Each needs a stated meaning.
 NULLABLE: dict[str, str] = {
     "fetch.end": "null means the run date",
+    # C4 and C8 are DEAD, not open: the questions ceased to exist rather than being
+    # answered. The keys stay so a reader meets the reason here rather than hunting the
+    # ledger, and so reading one raises with that reason instead of returning a default.
+    "composite.winsor_z": "C4 is DEAD — scaled ranks (C17) have no outliers to clip",
+    "composite.reversal_sign": "C8 is DEAD — C10 excluded the reversal feature",
 }
 
 KNOWN: set[str] = {
@@ -64,10 +66,23 @@ KNOWN: set[str] = {
     "eligibility.require_full_window", "eligibility.min_eligible",
     "signal.lookback_unit", "signal.lookback", "signal.skip", "signal.return_type",
     "signal.formation_lag_days",
-    "composite.zscore_population", "composite.winsor_z",
-    "composite.missing_feature_policy", "composite.reversal_sign",
-    "composite.feature_weights", "composite.buffer_enter_rank",
-    "composite.buffer_exit_rank",
+    "composite.features", "composite.market_proxy", "composite.residual_form",
+    "composite.beta_window", "composite.flat_day_policy",
+    # One key per feature sign, because `_flatten` recurses into mappings. The churn is
+    # deliberate: a new feature cannot enter without its sign being declared here too.
+    "composite.feature_signs.mom_12_1", "composite.feature_signs.info_discreteness",
+    "composite.feature_signs.drawdown_252",
+    "composite.combination_rule", "composite.ranking_population",
+    "composite.missing_feature_policy", "composite.use_buffer",
+    "composite.active_weights",
+    "composite.weight_vectors.base.mom_12_1",
+    "composite.weight_vectors.base.info_discreteness",
+    "composite.weight_vectors.base.drawdown_252",
+    "composite.weight_vectors.tilt.mom_12_1",
+    "composite.weight_vectors.tilt.info_discreteness",
+    "composite.weight_vectors.tilt.drawdown_252",
+    "composite.winsor_z", "composite.reversal_sign",
+    "composite.buffer_enter_rank", "composite.buffer_exit_rank",
     "selection.tie_break",
     "execution.rebalance_calendar", "execution.share_granularity",
     "execution.cash_residue", "execution.charge_initial_build",

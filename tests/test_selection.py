@@ -139,3 +139,63 @@ def test_nan_score_never_reaches_selection(cfg):
     scores = pd.Series({"A": 1.0, "B": float("nan")})
     with pytest.raises(AssertionError):
         top_n(cfg, scores, 1, incumbents=[])
+
+
+# ── V1: weights, and the rank buffer's hysteresis (C9, §6) ───────────────────
+
+
+def test_weight_vectors_normalise_and_cover_every_feature(cfg):
+    """
+    C9. Both pre-registered vectors are stored as integers and normalised at use, so the
+    base vector is exactly 1/3 each and the tilt exactly 0.5/0.25/0.25 with no
+    floating-point constant written anywhere. Checks every declared vector, not just the
+    active one, so the tilt arm cannot rot while unused.
+    """
+    from src.features import signs, weights
+
+    for vector in ("base", "tilt"):
+        cfg._flat["composite.active_weights"] = vector
+        w = weights(cfg)
+        assert set(w) == set(cfg["composite.features"]), f"{vector} misses a feature"
+        assert abs(sum(w.values()) - 1.0) < 1e-12, f"{vector} does not sum to 1"
+    cfg._flat["composite.active_weights"] = "base"
+
+    assert weights(cfg) == {f: 1 / 3 for f in cfg["composite.features"]}
+    cfg._flat["composite.active_weights"] = "tilt"
+    assert weights(cfg)["mom_12_1"] == 0.5
+    cfg._flat["composite.active_weights"] = "base"
+
+    # Every feature must carry a sign; src/config.py declares one key each so that a new
+    # column cannot arrive without one.
+    assert set(signs(cfg)) == set(cfg["composite.features"])
+
+
+def test_buffer_keeps_an_incumbent_that_slipped_out_of_the_top_ten(cfg):
+    """
+    §6's hysteresis: a name enters at top `enter_rank` and is evicted only below
+    `exit_rank`. Exercised for the first time by the `V1-buffer` arm.
+    """
+    from src.select import with_buffer
+
+    scores = pd.Series({f"N{i:02d}": 1.0 - i / 100 for i in range(30)})
+    incumbent = "N14"                      # rank 15: outside the top 10, inside the top 20
+    book = with_buffer(cfg, scores, incumbents=[incumbent], n=10)
+    assert incumbent in book, "buffer evicted a name that was still inside exit_rank"
+    assert len(book) == 10 and len(set(book)) == 10
+
+    # Below exit_rank it must go, and a strict top-10 rule would never have kept it.
+    assert "N25" not in with_buffer(cfg, scores, incumbents=["N25"], n=10)
+
+
+def test_buffer_drops_an_incumbent_that_became_ineligible(cfg):
+    """
+    Eligibility overrides the buffer: a name absent from `scores` was not eligible on this
+    date and leaves whatever rank it used to hold. Otherwise a delisted or index-exited
+    name could be held indefinitely by hysteresis alone.
+    """
+    from src.select import with_buffer
+
+    scores = pd.Series({f"N{i:02d}": 1.0 - i / 100 for i in range(30)})
+    book = with_buffer(cfg, scores, incumbents=["GONE"], n=10)
+    assert "GONE" not in book
+    assert len(book) == 10

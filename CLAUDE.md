@@ -247,23 +247,60 @@ quarterly doesn't" as a property of the strategy rather than of the calendar.
 
 ## 6 · V1 — composite score
 
-Only after V0 and the noise band exist.
+Only after V0 and the noise band exist. **The feature set was frozen 30 Aug 2026 as
+`DECISIONS.md` C10–C16, on the Phase 0 diagnostic** (`scripts/09_feature_diagnostics.py`,
+`NOTES.md` N3). This section previously specified a 4–6 feature set that measurement
+retired; the old list is kept below rather than deleted.
 
-Cross-sectional z-score composite, 4–6 features, **one per concept**. Averaging seventeen
-features where six are momentum variants silently makes the composite 60% momentum.
+**Three features, one per concept.** Averaging seventeen features where six are momentum
+variants silently makes the composite 60% momentum — and the first draft of this section
+made a milder version of that mistake, which is what Phase 0 caught.
 
-- Momentum: 12-1 cumulative return
-- Volatility: 60-day realised vol
-- Liquidity: Amihud illiquidity or 20-day turnover
-- Reversal or drawdown: 20-day return, or drawdown from 252-day peak
+| Feature | Definition | Concept | Sign |
+|---|---|---|---|
+| 12-1 momentum | `P(t−21)/P(t−252) − 1` | how much it rose | **+** |
+| Information discreteness | `sign(Mom) × (%neg − %pos)` over the 231-day window | how the rise arrived | **−** (C14) |
+| Drawdown from 252d peak | `P(t−1)/max(P over 252d) − 1` | where it sits vs its own high | **+** (C15) |
 
-Each feature is z-scored **across stocks on the rebalance date** — never across time for
-one stock — winsorised at ±3, then averaged with fixed weights. Fixed weights mean nothing
-is fit, so there is no training window, no walk-forward, and no look-ahead question to
-answer.
+**Signs are in `config.yaml`, deliberately.** A reversed sign on information discreteness
+is the one V1 error that leaves no trace — the run completes, reconciles to the rupee and
+reports plausible numbers while buying the opposite of what was intended. Low information
+discreteness is the predictive state, so it enters negated.
+
+**No new numeric parameter.** The drawdown window *is* `signal.lookback`; information
+discreteness uses the same `lookback`/`skip` pair as the momentum signal. V1 inherits V0's
+zero-fitted-parameter defence intact.
+
+**What Phase 0 retired, and why.** Residual momentum measured `ρ = +0.883` against 12-1
+momentum, selecting 7.8 of the same 10 names — this section's old plan would have been
+three concepts in four weight slots. It is held back as a single-change Phase 3 arm
+instead (C10). Volatility is out: beta, idiosyncratic vol and total vol are one concept in
+three columns (ρ 0.49–0.75). Liquidity is out: Amihud and rupee turnover are near mirror
+images at `ρ = −0.79`. Short-horizon reversal is out: it is a separate bet, not a
+refinement (C8).
+
+**The combination rule is not settled.** How the three columns become one score — z-scores
+or ranks, and with what clipping and weights — is C3/C4/C9, still `OPEN`, and is Phase 2 of
+`PLAN.md`. This section used to specify "z-scored, winsorised at ±3" as though it were
+settled; it never was, and Phase 0 measured that the choice is consequential — a
+z-composite and a rank composite share only **5.7 of 10** names despite correlating 0.971.
+It is being taken on its own evidence rather than inherited from a first draft.
+Whatever is chosen, features are compared **across stocks on the rebalance date** — never
+across time for one stock — and combined with fixed weights, so nothing is fit, and there
+is no training window, no walk-forward, and no look-ahead question to answer.
 
 **Rank buffer:** a name enters at top 10 and is only evicted below top 20. Hysteresis, one
 rule, kills most churn. An incumbent that becomes ineligible exits regardless of rank.
+
+**Result, 30 Aug 2026: this composite was built, run, and lost.** All five pre-registered
+arms came in −3.47σ to −5.22σ against `PIT-V0` (§11), and PNL is monotone in the momentum
+weight — every unit of weight moved off the two new features and onto 12-1 momentum earned
+money. V1 is **not adopted**; `PIT-wk-drift` remains the submission. The section above is
+kept as specified rather than rewritten, because it is what was declared before the runs.
+`NOTES.md` N6 carries the mechanism and the methodological lesson: **the one-per-concept
+rule defends against double-counting, and is not evidence the concepts are worth counting
+once.** An orthogonal feature that carries no signal does *more* damage to a composite than
+a redundant one, because it dilutes without correlating.
 
 ---
 
@@ -327,7 +364,7 @@ band are done, and nothing is kept unless it clears the band.
 
 | # | Modification | Rationale | Risk | Status |
 |---|---|---|---|---|
-| 1 | Feature weight variants on the composite | Cheap to test, directly changes selection | Each variant is a trial; log it | Not started |
+| 1 | Feature weight variants on the composite | Cheap to test, directly changes selection | Each variant is a trial; log it | Feature set frozen 2026-08-30 (C10–C16, §6); weights are C9, open |
 | 2 | ~~Semi-annual vs quarterly rebalance~~ → **the full `FREQ` cadence grid** | Holding-period effect, likely material | Fewer observations, noisier | **Done 2026-08-27.** Superseded by an 8-cell grid (4 cadences × reset/drift). **Monthly reset wins: +₹2.00 Cr, `z_qtr` +2.32.** §11 |
 | 3 | Universe tilt toward midcap | Largest single PNL lever | Concentrates index-inclusion bias | Not started |
 | 4 | Score-weighted instead of equal weight | Mild concentration into conviction | 1/N is hard to beat at 10 names | Not started — but note `FREQ` found **reset-to-1/N beats letting weights drift at every cadence**, so 1/N is if anything harder to beat than assumed |
@@ -494,6 +531,11 @@ comparable to another row's `z_own` unless both share a calendar.
 | 2026-08-28 | **`PIT-wk-drift`** | **Weekly cadence, drift weighting.** | **4,85,51,143** | **+97,47,435** | **+3.10** | **+1.91** | **100th pct** | **pass** (+5.44%, 95.5th pct) | **The selected configuration.** +₹0.97 Cr over `PIT-V0`, Sharpe 1.43 → **1.64**, MDD −31.3% → **−30.6%**. Chosen on 2021–25 alone; note quarterly scores *better* in 2026 and still loses, which is §9 working. |
 | 2026-08-28 | `PIT-dy-reset` | Daily, reset. | 3,47,66,478 | −40,37,230 | −7.86 | −0.79 | 100th pct | **pass** (+0.98%) | **Loses to `PIT-V0`.** `z_own` −7.86 vs `z_qtr` −0.79 — the denominator gap D11-r predicted, in the other direction. Read `z_qtr`. |
 | 2026-08-28 | `PIT-dy-drift` | Daily, drift. | 3,54,59,887 | −33,43,822 | −6.51 | −0.66 | 100th pct | **pass** (+0.18%) | Also loses. The cadence term is an inverted U peaking at **weekly**, not monthly. |
+| 2026-08-30 | `V1-base` | **The composite.** 12-1 momentum + information discreteness (negated) + drawdown from the 252-day peak, as scaled ranks (C17), equal weights, strict top 10, quarterly/reset. | 1,31,92,525 | −2,56,11,184 | −5.03 | −5.03 | **fails** | not run | **Loses decisively, and on every axis.** Sharpe 1.43 → 0.84, MDD −31.3% → −40.5%, annualised vol 26.1% → 21.8%. Implementation verified against Phase 0's independent path: book overlap with V0 3.35/10 against a predicted 3.4/10. |
+| 2026-08-30 | `V1-buffer` | `V1-base` plus the §6 rank buffer, 10/20 hysteresis. A second change, so its own line. | 1,22,09,183 | −2,65,94,526 | −5.22 | −5.22 | **fails** | not run | **Worst arm in the slate.** Churn 7.21 → 5.58 and costs fall ₹5.51 L → ₹4.28 L, so the buffer does what it is for; it just does not pay. Moves PNL −0.19σ from `V1-base` — inside the band, as predicted. |
+| 2026-08-30 | `RM-solo` | V0's rule with standardised residual momentum (C12/C13) swapped in for 12-1. One feature changed, nothing else. The C10 promise. | 1,78,33,244 | −2,09,70,465 | −4.12 | −4.12 | **fails** | not run | **Answers C10's held-back question: plain momentum wins.** Annualised vol 20.34% against V0's 26.12% — prediction 3 confirmed — but it gives up ₹2.10 Cr to buy that, and loses on Sharpe too (1.12 vs 1.43). |
+| 2026-08-30 | `V1-tilt` | `V1-base` with the 2/1/1 weight vector (C9), pre-registered before any arm ran and run unconditionally. | 2,11,58,779 | −1,76,44,929 | −3.47 | −3.47 | **fails** | not run | **Best V1 arm, still ₹1.76 Cr behind V0.** Lands between `V1-base` and V0 exactly as prediction 4 said. The ordering is monotone in momentum weight — 1/3 → 1/2 → 1 gives ₹1.32 Cr → ₹2.12 Cr → ₹3.88 Cr. |
+| 2026-08-30 | `V1-wk-drift` | `V1-base` (which beat `V1-buffer`) re-run at weekly + drift, the selected configuration's own frame. Scored against that cell's own σ of ₹31,39,462. | 2,35,50,835 | −2,50,00,308 | −7.96 | −4.91 | **fails** | not run | **The cadence gain does not rescue the signal.** Weekly+drift lifts the composite ₹1.32 Cr → ₹2.36 Cr, the same direction it lifted V0, but `PIT-wk-drift` is at ₹4.86 Cr. Costs reach ₹37.28 L at 29.85× turnover. |
 
 ### `PIT` result — run 2026-08-28 on the point-in-time universe, seed 20260824, 8 cells, 291 s
 
@@ -515,6 +557,83 @@ percentile) and nothing was tuned on that window.
 weekly. And **drift now beats reset at every cadence**, where reset had beaten drift at
 every cadence before — see `DECISIONS.md` B3, which records the reversal rather than
 restating the conclusion.
+
+### `V1` result — run 2026-08-30, 5 pre-registered arms
+
+**Every arm loses, and not narrowly.** Against `PIT-V0`'s ₹3,88,03,708:
+
+| Arm | PNL | Δ vs V0 | z | Sharpe | MDD | ann. vol | churn/reb |
+|---|---|---|---|---|---|---|---|
+| **`PIT-V0`** | **3,88,03,708** | — | — | **1.43** | **−31.29%** | **26.12%** | **5.05** |
+| `V1-tilt` | 2,11,58,779 | −1,76,44,929 | −3.47 | 1.14 | −37.83% | 22.43% | 6.58 |
+| `RM-solo` | 1,78,33,244 | −2,09,70,465 | −4.12 | 1.12 | −34.79% | 20.34% | 6.00 |
+| `V1-base` | 1,31,92,525 | −2,56,11,184 | −5.03 | 0.84 | −40.52% | 21.84% | 7.21 |
+| `V1-buffer` | 1,22,09,183 | −2,65,94,526 | −5.22 | 0.77 | −38.76% | 22.40% | 5.58 |
+
+**This is a clean negative result and it is reported as the headline of the phase.** V1 is
+not adopted. Under §11's selection rule the submission remains `PIT-wk-drift`, exactly as
+the pre-registration said it would if every arm lost — V1 was declared a candidate, not a
+commitment, before any number existed.
+
+**The mechanism, and it is the one §3 predicted.** Every V1 arm has *lower* volatility than
+V0 — 20.3% to 22.4% against 26.1% — and every one earns less. Drawdown-from-the-high tilts
+away from high-volatility names by construction (Phase 0: ρ(F8, idio vol) = −0.28 Spearman,
+−0.41 Pearson), which is precisely what C15 cited *in its favour*. Under a raw-PNL metric
+that de-risking is a handicap, which §3 has said from the beginning: *risk-reduction
+machinery is a handicap under this metric.*
+
+**But de-risking is not the whole story, and saying so would be too kind to V1.** If the
+composite merely traded return for risk it would hold its own per unit of risk. It does not:
+Sharpe falls 1.43 → 0.84 and max drawdown gets *worse*, −31.3% → −40.5%. The composite is
+worse on the risk-adjusted metric **and** the risk metric, not just the scoring one. The
+honest reading is that the two added features are not merely metric-inappropriate here —
+over this window they carry no demonstrated forecasting content at all, and Phase 0 said in
+advance that it could only establish they were *distinct*, never that they *worked*.
+
+**Was it a bug?** Checked before writing any of the above. `V1-base`'s book overlaps V0's by
+**3.35/10**, against the **3.4/10** that `scripts/09_feature_diagnostics.py` computed
+independently on 2026-08-29 through a completely separate code path. The composite is
+implemented as C17 specifies, and `tests/` asserts the defining property — invariance to a
+monotone transform of any one feature — that a z-composite could not satisfy.
+
+#### Scoring the six pre-registered predictions
+
+**1 · Turnover. Half right, and the failed half is instructive.** Churn was predicted at
+**7.21** names per quarter and came in at **exactly 7.21** — Phase 0's cross-sectional
+estimate transferred to the live backtest without adjustment. But the cost forecast of
+**₹8.5–9 L was wrong: costs came in at ₹5.51 L, *below* V0's ₹6.11 L.** The prediction
+implicitly assumed V1's NAV would grow like V0's; turnover is a ratio while costs are rupees
+on traded notional, and V1's book compounded to about a third of V0's, so a higher turnover
+ratio on a much smaller portfolio costs fewer rupees. Recorded as a failed sub-prediction
+rather than reworded. **The substantive claim it was making is confirmed emphatically:** V1
+paid *less* in costs than V0 and still lost ₹2.56 Cr, so this is not a cost story.
+
+**2 · The buffer at quarterly. Half right.** The PNL half is confirmed — `V1-buffer` moves
+**−0.19σ** from `V1-base`, comfortably inside the band, so at quarterly the buffer does not
+matter. The churn half **narrowly failed**: predicted a cut of ≥2 names per quarter, measured
+**1.63** (7.21 → 5.58). N1's mechanism 1 survives this test in the weak sense that quarterly
+has little boundary churn to kill — but note the arm was never a fair test of the mechanism,
+which N1 predicts should bite at *weekly*, and no buffered weekly arm was pre-registered.
+
+**3 · `RM-solo` volatility. Confirmed.** 20.34% annualised against V0's 26.12%, the largest
+volatility reduction in the slate, exactly as the mechanism said: residualising strips the
+beta loading §5 identified. PNL direction was explicitly not predicted; it fell ₹2.10 Cr.
+Falling PNL alongside falling volatility is §3 behaving as designed, **but** Sharpe fell too
+(1.12 vs 1.43), so this is not purely a metric artefact.
+
+**4 · `V1-tilt` lands between `V1-base` and V0. Confirmed.** ₹2.12 Cr sits between ₹1.32 Cr
+and ₹3.88 Cr. Stronger than predicted: PNL is **monotone in the momentum weight** across all
+three points — 1/3 → 1/2 → 1 gives ₹1.32 Cr → ₹2.12 Cr → ₹3.88 Cr. Every unit of weight
+moved from the two new features to momentum earns money, which is the cleanest possible
+statement that the two new features are the problem.
+
+**5 · No direction predicted for `V1-base`. Honoured** — and worth noting that had a
+direction been guessed it would almost certainly have been the wrong one, since the
+composite was assembled from features chosen on the strength of their distinctness.
+
+**6 · Multiple comparisons. Not exercised.** No arm came close to +1σ, so the commitment to
+discount a lone +1.0σ to +1.5σ result never had to be honoured. It stands for future slates.
+
 
 ### `FREQ` result — run 2026-08-27 on the superseded today's-constituents universe
 
@@ -580,10 +699,64 @@ Declared before being run, so they are not post-hoc fishing.
 |---|---|---|---|
 | `B3-drift` | Retained names keep their drifted weight; only entries and exits are traded, with exit proceeds spread across new entries. Config: `weighting.reset_to_target: false`. | `DECISIONS.md` B3, recorded `PROVISIONAL`. Resetting to 1/10 trims winners every quarter, which cuts against the momentum persistence §7 says paid. | 5 |
 | `FREQ` | **The frequency sweep — 8 arms, declared 27 Aug 2026 as one grid.** 4 cadences × 2 weighting rules, every cell through the identical engine. Absorbs `B3-drift` as its quarterly-drift cell. | §7 records holding period as untested and asserts "costs do not constrain it"; `DECISIONS.md` B1 queued alternative cadences. | 5 |
+| `V1` | **The composite slate — 5 arms, declared 30 Aug 2026 before any arm was run.** The §6 feature set through the identical engine, plus the rank buffer, the residual-momentum swap and a second weight vector. | `DECISIONS.md` C10–C17; `PLAN.md` Phases 2–4. | 4 |
 
 This requires `backtest.py` to be **weighting-agnostic as well as signal-agnostic** — if a
 variant doesn't run through the identical engine, its PNL isn't comparable to V0's and the
 noise band cannot adjudicate it.
+
+#### `V1` — the slate, and what we expect to find
+
+Five arms, declared here **before the first was run**. Every cell's noise band already
+exists, so the slate costs no band runs and every arm is scored against a σ that was fixed
+before the arm was conceived.
+
+| # | ID | What it is | Frame | σ |
+|---|---|---|---|---|
+| 1 | `V1-base` | The §6 composite — 12-1 momentum, information discreteness (negated), drawdown from the 252-day peak — as scaled ranks, equal weights, strict top 10 | quarterly + reset | ₹50,92,127 |
+| 2 | `V1-buffer` | Arm 1 plus the 10/20 rank buffer. A **second** change, so it gets its own line rather than being folded into arm 1 | quarterly + reset | ₹50,92,127 |
+| 3 | `RM-solo` | V0's rule with standardised residual momentum swapped in for 12-1. One feature changed, nothing else — the cleanest possible attribution, and the C10 promise honoured | quarterly + reset | ₹50,92,127 |
+| 4 | `V1-tilt` | Arm 1 with the 2/1/1 weight vector. Declared now and run **unconditionally**, so it is a pre-registered configuration and not a reaction to arm 1's number | quarterly + reset | ₹50,92,127 |
+| 5 | `V1-wk-drift` | Whichever of arms 1–2 wins, re-run at weekly + drift as a confirmation cell on the selected configuration's own frame | weekly + drift | ₹31,39,462 |
+
+**Base frame is quarterly + reset, not the submitted `PIT-wk-drift`.** Quarterly's band is
+the one with most confidence behind it and is the reference for §7's whole attribution
+ladder. Building V1 on weekly+drift would stack a new signal on a weighting rule whose own
+evidence never cleared the band (`NOTES.md` N2: the drift-minus-reset gaps are +0.10 to
++0.57σ against a 1.0σ bar), and a V1 gain and a cadence gain would be confounded. Arm 5 is
+how the selected frame still gets checked.
+
+##### Six predictions, recorded before the runs so they cannot be retrofitted
+
+1. **Turnover rises ~43% and it will not explain anything.** Measured in the cross-section,
+   `V1-base` replaces **7.21** names per quarter against V0's **5.05**, so costs should go
+   from ₹6.11 L to roughly ₹8.5–9 L. That is immaterial against ₹3.88 Cr, so **if V1 loses,
+   it is not a cost story** — committed to in advance rather than reached for afterwards.
+2. **The buffer has little room at quarterly.** `V1-buffer` cuts churn by ≥2 names per
+   quarter and moves PNL by **less** than 1σ from `V1-base`. Quarterly meets the rank
+   boundary only four times a year. If the buffer moves PNL by *more* than 1σ here, N1's
+   boundary-churn mechanism is stronger than N1 supposed and that is the finding.
+3. **`RM-solo` comes in below V0's 33.06% annualised volatility**, because residualising
+   strips the beta loading §5 identified as V0's dominant exposure. Direction predicted on
+   mechanism. **No direction predicted for its PNL** — but if PNL falls while volatility
+   falls further, that is §3's "raw PNL rewards volatility" behaving exactly as designed.
+4. **`V1-tilt` lands between `V1-base` and V0.** Measured basis: tilt shares **4.0/10**
+   names with V0 against base's **3.4/10**, and ρ against 12-1 momentum rises 0.789 → 0.903.
+   If tilt does not land between them on PNL, the link between book overlap and PNL is
+   weaker than this project has been assuming.
+5. **No direction is predicted for `V1-base`'s PNL.** Phase 0 established the three features
+   are *distinct*; it established nothing about forecasting power, and two of the three rest
+   entirely on external evidence. A direction here would be a guess dressed as a hypothesis.
+6. **Multiple comparisons, committed in advance.** Under a roughly normal band, P(z > 1) per
+   arm is ~16%, so across five arms *some* positive result is likely on luck alone. **A
+   single arm landing between +1.0σ and +1.5σ will be reported as "did not clearly beat the
+   band", not as a finding.** Two or more arms clearing +1σ in the same direction is a
+   different matter and will be read as such.
+
+**Selection rule, fixed now:** the winning configuration is chosen on 2021–25 Total Net PNL
+alone, across *all* candidates including the V0 family. **V1 is a candidate, not a
+commitment** — if every arm loses to `PIT-wk-drift`, `PIT-wk-drift` is submitted and V1 is
+reported as a measured negative result. 2026 remains a one-way rejection filter (§9).
 
 #### `FREQ` — the grid, and what we expect to find
 
@@ -626,6 +799,7 @@ config.yaml            every parameter. no number lives anywhere else
 CLAUDE.md              this file
 DECISIONS.md           the decision ledger — authoritative
 NOTES.md               analysis notebook — mechanism reasoning, raw material for the report
+PLAN.md                the V1 build plan — phases, and the decision queue behind each
 src/
   config.py            load + validate; refuses a value for an open decision
   decisions.py         UnresolvedDecision, blocked()
@@ -635,14 +809,16 @@ src/
   universe.py          as-of eligibility: full window, tradeable, member (A5/A10/A17)
   membership.py        A17 — press-release parsing, backward roll, membership mask
   events.py            B10/A18 — forced mid-cycle exits: one table, two sources
-  features.py          signal computation
+  features.py          signal computation — the 3 frozen features + the composite (C17)
   select.py            ranking, buffer, tie-break
   backtest.py          execution, costs, NAV, trades — signal- and weighting-agnostic
   metrics.py           round-trips and reported figures
   noise.py             the 10,000-draw band
   excel.py             workbook writer            [NOT BUILT — the deliverable is a report]
-scripts/               01_fetch  02_clean  03_v0  04_noise  05_v1  06_report  07_sweep
+scripts/               01_fetch  02_clean  03_v0  04_noise  07_sweep
+                       05_v1 — the pre-registered composite arms (C10/C17)
                        08_pit_universe — builds the point-in-time snapshot
+                       09_feature_diagnostics — Phase 0. correlations only, no PNL
 tests/                 conftest  test_config  test_causality  test_accounting  test_clean  test_selection
 data/raw/              immutable, as-of stamped snapshots
 data/raw/press_releases/  27 NSE index-review PDFs — the membership evidence (A17)
@@ -653,6 +829,8 @@ data/membership_overrides.csv  A17: renames, revocations, substitutions, waivers
 data/phantom_days.csv  A8 rider: non-sessions the volume filter keeps. evidence-carrying
 output/                nav, trades, holdings, weights, benchmarks, metrics, round_trips (CSV)
 output/sweep/<cell>/   one FREQ grid cell each, so a variant never overwrites V0
+output/v1/<arm>/       one pre-registered V1 arm each, same reason
+output/diagnostics/    Phase 0's feature study — the evidence behind C10-C17
 ```
 
 **Two structural commitments, expensive to reverse:**
@@ -673,12 +851,19 @@ python3 scripts/03_v0.py          # the backtest -> output/*.csv
 python3 scripts/04_noise.py       # the 10,000-draw band
 python3 scripts/08_pit_universe.py # point-in-time universe -> a new dated snapshot
 python3 scripts/07_sweep.py       # the cadence x weighting grid, 8 cells, ~290 s
-python3 -m pytest tests/ -q       # 84 pass, 1 xfail-strict
+python3 scripts/09_feature_diagnostics.py  # Phase 0: feature correlations, no PNL
+python3 scripts/05_v1.py --arm base        # the composite. --arm buffer|tilt|rm-solo
+python3 -m pytest tests/ -q       # 92 pass, 0 xfail
 
 # add --window stress for the 2026 rejection filter; --calendar/--weighting for one cell
 ```
 
-A stub script prints every config key still blocked and the decision blocking it.
+`05_v1.py` runs **no** noise band: every cell's σ already exists, is read back and asserted,
+so an arm is scored against a yardstick built before the arm was conceived. Re-drawing it
+could only introduce drift.
+
+No stub script remains — `cfg.pending()` has been empty since 2026-08-30, so there is no
+config key left to be blocked on. The machinery stays in place for the next open decision.
 
 ---
 
@@ -751,13 +936,17 @@ decision is forced. `openpyxl` is absent — xlsxwriter covers writing and we ne
 
 ## 15 · Status
 
-Deadline **31 August 2026**. Today **28 August 2026**.
+Deadline **31 August 2026**. Today **30 August 2026**.
 
 **Done.** Skeleton, data acquisition, the full cleaning layer, V0 end-to-end, the noise
-band, the cadence × weighting grid, **B10/A18 forced mid-cycle exits**, and **the
-point-in-time universe rebuild (A3 amended / A17)**. 84 tests pass, 1 xfail-strict (V1
-composite). Decisions A1–A18, B1–B12, C1, C2, C6, C7, D1–D11 are closed — 47 of 52, with
-A3, A6, B1, B3, B9 and B10 all amended or resolved after being found wrong.
+band, the cadence × weighting grid, **B10/A18 forced mid-cycle exits**, **the
+point-in-time universe rebuild (A3 amended / A17)**, and **`PLAN.md` Phases 0–4: the feature
+diagnostic, the frozen feature set and combination rule (C10–C17), and the five pre-registered
+V1 arms — all of which lost**. **92 tests pass, none xfail**: the composite landed, so
+`test_causality.py`'s xfail-strict flipped to three real tests. **Every decision in the
+ledger is closed — 59 of 59**, the first time `cfg.pending()` has been empty. A3, A6, B1,
+B3, B9 and B10 were all amended or resolved after being found wrong, and the tally itself
+was recounted twice on 30 Aug after being stale in three places.
 
 **The headline, on an honest universe.**
 
@@ -771,6 +960,11 @@ A3, A6, B1, B3, B9 and B10 all amended or resolved after being found wrong.
 **Best configuration found: `PIT-wk-drift` — the same rule rebalanced weekly, letting
 weights drift. ₹4,85,51,143 (+485.5%), CAGR 42.43%, Sharpe 1.64, MDD −30.64%.** +₹0.97 Cr over V0,
 `z_qtr` +1.91, selected on 2021–25 alone and passing the 2026 filter at +5.44%.
+
+**V1 did not displace it, and that is now settled.** All five pre-registered composite arms
+lost by −3.47σ to −5.22σ (§11). The submission stays `PIT-wk-drift`, which is what the
+pre-registration said would happen if every arm lost — V1 was declared a candidate, never a
+commitment.
 
 **Four findings from 2026-08-28 a reader should not have to dig for.**
 
@@ -791,11 +985,18 @@ weights drift. ₹4,85,51,143 (+485.5%), CAGR 42.43%, Sharpe 1.64, MDD −30.64%
 **Next, in order.**
 
 1. **Push to GitHub and write the 5–6 page report.** Both are hard checklist items still at
-   zero and worth more marks than any further strategy work. The universe rebuild is the
-   report's strongest section: a measured bias, a self-checking reconstruction, and two
-   published conclusions overturned by it.
-2. Then the backlog (§8), cheapest first. Cadence is done twice over; the tree ensemble
-   (#7) is almost certainly not worth the days it costs.
+   zero and worth more marks than any further strategy work, and with V1 settled there is
+   no longer a strategy question worth spending the remaining day on. The report now has
+   two strong sections rather than one: the universe rebuild (a measured bias, a
+   self-checking reconstruction, two published conclusions overturned) and **V1's
+   pre-registered failure** — a five-arm slate declared in advance, every arm scored against
+   a band drawn before it existed, every arm reported including the losers.
+2. Optionally `PLAN.md` Phases 5–6 (the weighting axis, then the 2026 filter). Low value:
+   `NOTES.md` N2 already measures the weighting axis as sub-band at every cadence.
+3. The backlog (§8) is effectively closed by V1's result. The tree ensemble (#7) needs a
+   walk-forward and a look-ahead defence to search a feature space that three hand-picked
+   features just failed in; it is not worth the remaining time.
 
-Still open: C3, C4, C5, C8, C9 (V1 composite). Nothing open blocks V0, the band, or the
-selected configuration.
+**Nothing is open.** All 59 decisions are closed and `cfg.pending()` returns empty. Note
+that C4 and C8 are `DEAD` — their questions ceased to exist rather than being answered — and
+each says so in place rather than being quietly counted as resolved.

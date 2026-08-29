@@ -27,6 +27,11 @@ V0 beats 9,996 of 10,000 random 10-stock portfolios drawn from the same eligible
 the same dates. The configuration was selected on 2021–25 alone; the 2026 window is used
 only as a one-way rejection filter.
 
+**A three-feature composite signal was pre-registered, built and tested — all five arms
+lost**, by −3.5σ to −5.2σ against the baseline. It is not adopted, and the negative result
+is reported in full: [`WALKTHROUGH.md` §10a](WALKTHROUGH.md) for the narrative, `CLAUDE.md`
+§11 for the arms and the scored predictions.
+
 ## Requirements
 
 Python 3.12, with `pandas`, `numpy`, `scipy`, `yfinance`, `matplotlib`, `scikit-learn`,
@@ -41,14 +46,17 @@ python3 scripts/02_clean.py         # raw -> validated panel + data quality repo
 python3 scripts/03_v0.py            # the backtest -> output/*.csv
 python3 scripts/04_noise.py         # 10,000 random portfolios -> the significance band
 python3 scripts/07_sweep.py         # cadence x weighting grid, 8 cells (~5 min)
-python3 -m pytest tests/ -q         # 84 pass, 1 xfail-strict (the V1 composite)
+python3 scripts/09_feature_diagnostics.py   # feature correlations + shapes. no PNL
+python3 scripts/05_v1.py --arm base # the composite. --arm buffer|tilt|rm-solo
+python3 -m pytest tests/ -q         # 92 pass
 ```
 
 Steps 1, 8 and 2 must run before the rest, in that order. Add `--window stress` for the
-Jan–Jun 2026 run. `03_v0.py` and `04_noise.py` accept `--calendar` and `--weighting` to run
-a single grid cell, writing under `output/sweep/<cell>/` so a variant cannot overwrite the
-baseline. `05_v1.py` and `06_report.py` are not implemented and print the decisions
-blocking them.
+Jan–Jun 2026 run. `03_v0.py`, `04_noise.py` and `05_v1.py` accept `--calendar` and
+`--weighting` to run a single grid cell, writing under `output/sweep/<cell>/` and
+`output/v1/<arm>/` so a variant cannot overwrite the baseline. `05_v1.py` runs no noise
+band: every cell's band already exists and is read back and asserted, so an arm is scored
+against a yardstick built before it existed. `06_report.py` is not implemented.
 
 ## Layout
 
@@ -70,9 +78,12 @@ src/
   backtest.py     execution, costs, NAV, trades — signal- and weighting-agnostic
   metrics.py      round trips and every reported figure
   noise.py        the 10,000-draw significance band
-scripts/          01_fetch 02_clean 03_v0 04_noise 07_sweep 08_pit_universe
+scripts/          01_fetch 02_clean 03_v0 04_noise 05_v1 07_sweep 08_pit_universe
+                  09_feature_diagnostics
 tests/            config, causality, accounting, cleaning, selection
 output/           nav, trades, holdings, weights, benchmarks, metrics (CSV)
+output/v1/        one directory per pre-registered composite arm
+output/diagnostics/  the feature correlation study behind the composite's design
 ```
 
 ## Data
@@ -103,7 +114,14 @@ the pattern. A parameter whose decision is still open is `null`, and reading it 
 error naming the decision rather than guessing.
 
 **`DECISIONS.md` records every choice**, including the ones that were rejected, and the
-ones that were later found wrong and reversed.
+ones that were later found wrong and reversed. All 59 are now closed; two are recorded as
+*dead* rather than answered, because the question ceased to exist rather than being
+resolved.
+
+**Variants are pre-registered before they are run.** The composite slate and its six
+predictions were written into `CLAUDE.md` §11 before the first arm executed, and every arm
+is reported with its predictions scored — including the two predictions that turned out
+half wrong.
 
 **`backtest.py` is signal- and weighting-agnostic.** It takes a holdings map and nothing
 about how those names were chosen, so the baseline, every variant, the benchmark and all

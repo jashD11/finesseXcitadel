@@ -1,9 +1,21 @@
 # Decisions
 
 Every choice where a reasonable person could have picked differently and the numbers
-would have changed. **50 decisions: 40 frozen, 1 under trial, 1 dead, 2 non-issues,
-6 still open.** They appear below as 48 entries — A5 and C6 are one question, and
-D6/D7/D8 are three parts of one answer.
+would have changed. **59 decisions: 51 frozen, 1 resolved on evidence, 3 dead,
+4 non-issues, and — for the first time in this project — none open.** They appear below as
+58 entries — A5 and C6 are two entries for one question, and D6/D7/D8 is one entry covering
+three.
+
+*Recounted 2026-08-30, twice.* The tally before Phase 1 read "50 decisions ... 48 entries,
+1 under trial, 6 still open" and was stale in three places at once: there were 50 entries
+not 48, B3 stopped being under trial when it resolved on 28 Aug, and only five entries were
+`OPEN`. Counted directly from the headings rather than incremented, then again after Phase 2
+closed the last five.
+
+**Nothing being open is a statement about the ledger, not about the strategy.** C4 and C8
+are `DEAD` because the questions ceased to exist rather than because they were answered, and
+each says so in place. `NOTES.md` N2 separately records that B3 was resolved twice in
+opposite directions on evidence that never cleared the project's own significance bar.
 
 Fourteen were closed on 24 Aug 2026: six answered directly, four settled by the
 organisers' guidelines document, four signed off with the V0 implementation plan. Where
@@ -604,18 +616,49 @@ This same definition sets A5's "full year of history" for eligibility, so one nu
 governs both and they cannot drift apart. A name needs 252 trading days of unbroken
 closes before the formation date (253 observations) before it can be ranked.
 
-### C3 · Compare each stock against whom? `OPEN`
-Recommended: all eligible stocks pooled together. Scoring within each index separately
-would quietly cancel out the large-cap vs mid-cap tilt — and that tilt is worth more than
-the stock-picking rule, so it must be a conscious choice, not a side effect.
+### C3 · Compare each stock against whom? `FROZEN 2026-08-30`
+**All eligible stocks pooled together** — one ranking over everything eligible on the date.
 
-### C4 · Capping extreme scores `OPEN`
-Recommended: convert to a standard score first, then clip at ±3. Stops one runaway stock
-from squashing all the others into a narrow band.
+**Chosen for simplicity, and the reason originally given for it is wrong.** The
+recommendation that stood here read: *"Scoring within each index separately would quietly
+cancel out the large-cap vs mid-cap tilt — and that tilt is worth more than the
+stock-picking rule."* Measured on the frozen feature set, there is no large tilt for
+within-index ranking to cancel: **the pooled top 10 is already 52% midcap**, roughly the
+50/50 that ranking within each index would force. And the two rules select **9.3 of the
+same 10 names**.
 
-### C5 · What if a stock is missing one input? `OPEN`
-Recommended: it sits out that quarter. Filling in an average would put a stock in the
-ranking based on a made-up number.
+So pooling is taken because it is one rule instead of two, needs no per-index membership
+path, and was measured not to matter — not because it protects a return term. Within-index
+ranking would also lean on a split A17 records as approximate for MRF, BANKBARODA and
+NATIONALUM (63 name-dates sit in both indices at once), which is a second reason to prefer
+the union the eligibility gate already reads.
+
+### C4 · Capping extreme scores `DEAD 2026-08-30`
+**The question ceases to exist under C17.** Scaled ranks have no outliers to clip: the most
+extreme name scores `N/(N+1)` and the least extreme `1/(N+1)`, whatever the raw values do.
+There is no threshold left to choose.
+
+**Two things are recorded separately, so the ledger does not overstate why it died.** The
+question is dead *because of C17*. It was also, independently, **much smaller than this
+entry assumed** — Phase 0 measured a ±3 clip as touching **2.88%** of names and changing a
+z-composite's book by ~0.6 names of 10 (ρ 0.9993, 9.4/10 overlap). `PLAN.md` D8 argued that
+dissolving this decision was "one of the strongest arguments for the rank route"; it was
+not, and C17 rests on robustness instead.
+
+### C5 · What if a stock is missing one input? `NON-ISSUE 2026-08-30`
+**The rule is recorded — a stock missing any input sits that rebalance out** — but it
+cannot fire on the frozen feature set, for a structural reason rather than a lucky one.
+
+All three C10 features are pure functions of closes over windows that A5/C6 eligibility
+already requires to be complete, so a name that is eligible necessarily has all three. Phase
+0 confirms it: **zero NaN across 3,809 name-dates**, asserted rather than eyeballed.
+
+Kept as a live config value (`missing_feature_policy: ineligible`) rather than deleted,
+because it is the rule that would apply the moment a feature is added that *can* be missing
+— a volume-based column, for instance, which F6 and F10 would both have been. Filling with
+a cross-sectional average would rank a stock on a made-up number and would mean two stocks
+were scored by different formulas, which the mandate's "same core methodology applied
+consistently across all 10 stocks" forbids.
 
 ### C6 · How much history to compute a feature? `FROZEN`
 Full window, same as A5.
@@ -632,14 +675,208 @@ agree instead of pulling against each other: neither will evict a holding for a 
 that is merely equal. ISIN is the tie-break of last resort because it is the one
 identifier that never gets renamed (A7).
 
-### C8 · Is a recent price rise good or bad? `OPEN`
+### C8 · Is a recent price rise good or bad? `DEAD 2026-08-30`
 Genuinely ambiguous, and I won't pick it silently. All the scores have to point the same
 direction before they're averaged, but a 20-day gain reads as *positive* under momentum
 and *negative* under mean-reversion. **Blocks V1.**
 
-### C9 · How much weight does each feature get? `OPEN`
-Recommended: equal, fixed in the config before any result is seen. Tuning these weights
-would destroy V1's main defence — that nothing was fitted to the data. **Blocks V1.**
+*2026-08-30, Phase 2:* **closed as `DEAD`, not answered.** C10 excludes F7 from the V1
+feature set, so there is no longer a feature whose sign this question governs. The ambiguity
+was never resolved and this entry should not be read as resolving it — if a short-horizon
+reversal arm is ever wanted, C8 reopens and must be answered on its own evidence.
+
+C15 records the related trap: signing F8 negatively would have admitted the same reversal
+bet through a different column, so excluding F7 only works if F8's sign is positive.
+
+### C9 · How much weight does each feature get? `FROZEN 2026-08-30`
+**Equal — one third each — fixed in `config.yaml` before any V1 result was seen.** With
+three features there is no weight vector to search, so V0's zero-fitted-parameter defence
+carries into V1 intact and any V1 gain is attributable to the feature set alone.
+
+**A second vector is pre-registered as an arm, which is not the same thing as tuning.**
+`V1-tilt` uses **2 / 1 / 1** — momentum weighted as much as the other two combined —
+declared in `CLAUDE.md` §11 before anything ran and **run unconditionally**, so it is one
+more pre-registered configuration the noise band adjudicates, not a response to a
+disappointing number. The distinction matters: choosing the tilt *after* seeing that the
+equal-weight composite lost PNL would fit the scoring window and is precisely what this
+entry was written to forbid. Only these two vectors are ever tried.
+
+Both are stored as **integers** (`{1,1,1}` and `{2,1,1}`) normalised at use, so they are
+exactly 1/3 each and exactly 0.5/0.25/0.25 with no floating-point constant written anywhere,
+and the tilt is a statable rule rather than a number picked from the air.
+
+Fitting the weights on 2021–25 was considered and **refused**: it fits on the scoring
+window, the band could no longer adjudicate the result, and no V1 number would be
+falsifiable.
+
+### C10 · Which measurements go into the V1 score? `FROZEN 2026-08-30`
+**Three: 12-month momentum (F1), information discreteness (F9), and drawdown from the
+252-day peak (F8).** One measurement per concept — how much it rose, how the rise arrived,
+and where it now sits against its own high.
+
+Residual momentum (F2) was in the proposed set and is **out**. `PLAN.md` set a redundancy
+threshold of 0.70 for F8 against F1 and never applied one to F2. Phase 0 measured both:
+F8 comes in at **+0.43**, F2 at **+0.883** with 7.8 of the same 10 names selected. The
+proposed four-measurement score was three concepts occupying four weight slots, which is
+exactly what `CLAUDE.md` §6's one-per-concept rule exists to prevent.
+
+The overlap is arithmetic rather than a property of this window: `RM = Mom − β·Mom[market]`
+subtracts one scalar times β, and β's spread (0.196–2.244) is small against the spread of
+12-month returns (−52% to +329%), so the subtraction cannot reorder much. Expect it to hold
+in other periods.
+
+F2 is not thereby discarded. The ~12% of ranking it does not share with F1 is the
+beta-driven part, which `CLAUDE.md` §5 identified as V0's dominant exposure. It is held
+back as a **single-change Phase 3 arm** — F2 swapped for F1, nothing else altered — which
+is a cleaner test of the residual-momentum hypothesis than burying it inside a composite.
+
+Dropped and why, one line each: F3 beta, F4 idiosyncratic vol and F5 total vol are one
+concept in three columns (Phase 0: 0.49, 0.59, 0.75 between them). F6 Amihud and F10 rupee
+turnover are near mirror images (**−0.79**), so dropping both costs one concept. F7
+short-horizon reversal is a separate bet, not a refinement — see C8.
+
+**This introduces no new numeric parameter.** F8's 252-day window *is* `signal.lookback`;
+F9's window is the same `lookback`/`skip` pair F1 already uses. V1 inherits V0's
+zero-fitted-parameter defence intact.
+
+### C11 · What counts as "the market" when stripping out market movement? `FROZEN 2026-08-30`
+**The equal-weight return of the point-in-time eligible universe**, not the Nifty 100 index.
+
+It is the benchmark `CLAUDE.md` §7's attribution ladder and the noise band already measure
+against, so a residual means "beat your own eligible set" — the same question §5 asks.
+
+Phase 0 measured the choice as nearly inert: between the two proxies, ρ is **+0.934** for
+β, **+0.980** for standardised residual momentum, **+0.970** for raw. The stated worry
+against the index — that being cap-weighted it leaves a size bet inside the residual —
+does not appear either: ρ(RM, rupee turnover) is +0.127 under the equal-weight proxy and
++0.120 under the index. Decided on internal consistency, because the numbers do not decide it.
+
+### C12 · Residual momentum: raw, or divided by its own noise? `FROZEN 2026-08-30`
+**Standardised: `RM / (sd(ε)·√T)`**, which is proportional to the t-statistic on α.
+
+**The reason is not the one originally proposed, and the original was tested and refuted.**
+The proposal argued that raw RM's spread scales with `sd(ε)`, so the raw ranking inherits an
+idiosyncratic-vol loading. Phase 0: the spread claim holds (ρ(|raw RM|, idio vol) = +0.29
+Spearman, **+0.44** Pearson) but it does not reach the signed ranking — ρ(raw RM, idio vol)
+is **+0.070**, and standardising *raises* it to **+0.107**. There was almost nothing there
+to remove. For scale, plain momentum carries **+0.239**, three times as much; the
+residualisation does real work on that exposure, the standardisation does not.
+
+The reason it is chosen instead: standardised RM is the only near-Gaussian column in the
+candidate set — excess kurtosis **0.13** and **0.21%** of name-dates beyond ±3σ, against
+**3.03** and **1.50%** for raw. That keeps C4's clip-or-not question genuinely open rather
+than forcing a ±3 clip chosen from the air.
+
+The two are not interchangeable despite ρ = 0.988: they select **7.3 of the same 10 names**.
+
+### C13 · How far back is market sensitivity measured? `FROZEN 2026-08-30`
+**The same 231-day formation window the momentum signal uses** (τ = t−252 … t−21), not a
+separate 36-month window.
+
+Zero extra parameters, and it makes residual momentum an *exact* algebraic decomposition of
+the momentum already computed: `Mom = β·Mom[market] + T·α`, verified to 1e−9 in
+`scripts/09_feature_diagnostics.py`. One window governs eligibility, F1 and β together, so
+they cannot drift apart. A 36-month window is more faithful to Blitz–Huij–Martens and gives
+steadier betas, but adds a parameter with no justification from our own data, lengthens the
+history requirement, and breaks the exact decomposition.
+
+### C14 · How is "rose steadily" measured? `FROZEN 2026-08-30`
+**Information discreteness: `ID = sign(Mom) × (%neg days − %pos days)`** over the 231-day
+formation window (Da, Gurun & Warachka 2014). Not the fraction of positive 21-day blocks.
+
+The mechanism: momentum pays because investors underreact, and underreaction is larger when
+information arrives in a steady drip too small to command attention than when it arrives in
+salient jumps that are priced immediately. `sign(Mom)` makes the measure read the same for
+winners and losers, so **low ID = continuous information** in both directions.
+
+**It enters the score negated**, because low ID is the predictive state and every other
+column is higher-is-better. This is the one sign error in V1 that would be invisible: a run
+with F9's sign reversed completes, reconciles to the rupee, and reports plausible numbers
+while buying the opposite of what was intended. The signs therefore live in `config.yaml`
+where a reader can see them, not in a function body.
+
+Phase 0 showed the two candidates are not two estimators of one concept: ρ = **−0.194**,
+and *negative is the agreeing direction* because low ID and many positive months describe
+the same state — so agreement is very weak. The block alternative is also far coarser: 9
+distinct values across ~190 names, leaving **95.5%** of names in a tied bucket, which under
+a rank-based score contributes almost no ordering. It also forces "monthly" to be chosen
+with no justification, where ID uses all 231 observations and needs no block size.
+
+F9 is close to orthogonal to both companions — ρ(F1, F9) = **−0.21**, ρ(F8, F9) = **−0.04**
+— which is the strongest argument for the slot. **Disclosed:** it rests on one published
+result with no in-house evidence. Phase 0 establishes it is *distinct*, not that it
+*forecasts*. Keeping it means V1 carries one bet sourced from outside this project.
+
+### C15 · Is being near the 252-day high good or bad? `FROZEN 2026-08-30`
+**Good — nearer the high scores higher.** F8 = `P(t−1) / max(P over 252d) − 1`, bounded
+above at 0, entering the score with a positive sign.
+
+`PLAN.md` listed F8 in its feature table and **never stated a sign anywhere**, which is the
+same shape of ambiguity C8 refuses to resolve silently. Recording it as its own decision
+rather than as an implementation detail.
+
+Positive is the documented direction (George & Hwang 2004, the 52-week-high effect, which
+subsumes much of conventional momentum) and the only reading coherent with a long-only
+momentum book. Phase 0 adds a reason of our own: ρ(F8, idio vol) = **−0.28** Spearman /
+**−0.41** Pearson, so a positively-signed F8 tilts *away* from the high-volatility exposure
+§5 identified as V0's dominant one — work the score actually wants done.
+
+The negative reading ("buy the dip inside a winner") is coherent as a thesis, but it makes
+F8 a short-horizon reversal bet, and C8 has already decided reversal stays out of V1 and
+gets its own pre-registered arm if it is wanted. Signing F8 negatively would admit that bet
+through a different column.
+
+### C16 · Days a stock did not move at all `NON-ISSUE 2026-08-30`
+Information discreteness counts up-days and down-days; a day with a return of exactly zero
+is neither, so the treatment has to be stated. **Both `%neg` and `%pos` are fractions of all
+231 days**, so flat days dilute both equally and push a thinly-traded name's score toward
+zero, i.e. toward the middle of the ranking. That is the paper's own construction and it
+fails safe.
+
+Recorded as `NON-ISSUE` on measurement rather than assertion. Against the alternative
+(rescaling over non-flat days only): ρ = **+0.9997**, **9.8 of 10** names in common,
+largest single-name shift **3.3 percentile points**. Flat days are 0.45% of name-days
+overall; 1.00% of name-dates exceed 5% flat and 0.37% exceed 10%, with a worst case of
+16.0%. The two treatments are the same measurement to three decimal places.
+
+
+### C17 · How do the three features become one score? `FROZEN 2026-08-30`
+**Scaled ranks.** Each feature is ranked across eligible names on the rebalance date,
+divided by `N+1` to put it on (0,1), and the three are averaged with the C9 weights. Never
+ranked across time for one stock — the time-shuffle test in `tests/test_causality.py` pins
+that down.
+
+This is the largest V1 decision after C10: a z-score composite and a rank composite over
+the same three features share only **6.6 of 10 names** (ρ +0.974). They are not
+interchangeable, and note that the correlation badly understates the disagreement — see
+`NOTES.md` N4.
+
+**Why ranks.** Only one of the three columns is pathological, and under z-scoring it would
+decide the book: 12-1 momentum has cross-sectional skew **+2.31**, excess kurtosis
+**+11.67**, and a most-extreme name at **5.64σ**. Drawdown (−1.41 / +4.34 / 1.28) and
+information discreteness (−0.11 / +0.20 / 2.72) are benign. Ranks make three
+differently-scaled features genuinely commensurable and are robust to exactly the data
+defects this project keeps finding — the `2025-03-18` stale bar moved a z-score by several
+sigma and would move a rank by a few places.
+
+**What ranks cost, stated plainly.** Magnitude information is discarded: a name up 300%
+ranks one place above a name up 200%. That is real signal thrown away, and it is the
+strongest argument for the z route.
+
+**The argument this decision does NOT rest on.** `PLAN.md` D6 claimed ranks were worth
+choosing partly because they "dissolve D8/C4 entirely — there are no outliers to clip". They
+do dissolve it, but Phase 0 measured that clip as nearly inert to begin with (C4). The
+saving is real and small; the robustness argument is what carries the decision.
+
+Van der Waerden normal scores, `NormInv(rank/(N+1))`, were considered and rejected: they
+share **8.3/10** names with plain scaled ranks, so they are a genuine third option rather
+than a variant, but they re-introduce tail sensitivity for a transformation harder to
+justify to a reader than either neighbour.
+
+**Testable consequence, and the check that proves this landed as specified:** a rank
+composite is invariant to any monotone transform of a single input feature. A z-composite
+is not. `tests/` asserts it.
+
 
 ---
 
