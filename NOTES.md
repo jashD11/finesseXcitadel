@@ -1131,3 +1131,34 @@ measured answer to "should we include smallcaps" is already no.
 
 **What this closes.** §8 backlog item 3 called a universe tilt "the largest single PNL
 lever". It is a large lever, it was never measured, and it points **down**.
+
+---
+
+## N14 · `weights.csv` was dimensionally wrong for the whole project — 2026-09-02
+
+**Found while generating the report pack**, by looking at a number instead of a chart: the
+first book's largest position read **0.22%** where ten equal-weighted names must read ~10%.
+
+**The bug.** `BacktestResult.weights` returned `holdings / nav` — **share count** divided by
+NAV, not position value divided by NAV. The two differ by the share price, so a ₹997,884
+position in a ₹477 stock reported as 0.02%. It had been that way since the property was
+written.
+
+**What it did not affect: anything.** Nothing consumed the frame except the CSV writer.
+NAV is computed independently in `run()` from `holdings * closes`, every metric derives from
+`nav`, `trades` and `holdings`, selection never reads weights, and the noise band has its own
+batched path. The submission's PNL is byte-identical before and after the fix
+(₹10,76,49,806), which is the check that establishes the blast radius rather than assuming
+it. So: a published artefact was wrong, no reported figure was.
+
+**Why it survived.** `weights.csv` was written for a report that had not been written yet,
+so between the day it was created and the day the report pack was built, **nothing read it**.
+Every other artefact in `output/` is either asserted against (the trade log reconciles to the
+NAV within ₹1) or feeds a number someone looked at. This one was neither. The lesson is not
+"add more assertions" in general — it is that an artefact with **no consumer and no
+assertion** is unverified by construction, and the project had exactly one.
+
+**The fix carries its own check.** `values` (marked position value) is now stored on the
+result, and the `weights` property asserts that the rows plus the cash residue sum to 1. That
+assertion would have failed on day one — it is the cheapest possible test of a frame whose
+whole meaning is "fractions of the portfolio", and it did not exist.

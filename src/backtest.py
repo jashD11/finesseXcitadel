@@ -39,12 +39,26 @@ class BacktestResult:
     cash: pd.Series          # daily residue, an explicit line
     costs: pd.Series         # daily costs charged
     capital: float           # the t0 value, at the open of the first rebalance (B7)
+    values: pd.DataFrame     # (date x symbol) position market value, marked at the close
 
     @property
     def weights(self) -> pd.DataFrame:
-        """Daily drifted weights. Executed weights at a rebalance are this frame's row
-        on that date, before the market moves it."""
-        return self.holdings.div(self.nav, axis=0)
+        """
+        Daily drifted weights. Executed weights at a rebalance are this frame's row on
+        that date, before the market moves it. Rows sum to 1 minus the cash residue (B5).
+
+        Marked value over NAV. Until 2026-09-02 this divided the **share count** by NAV,
+        which is dimensionally meaningless -- a 10% position in a Rs 477 stock read as
+        0.02%. Nothing consumed the frame except the CSV writer, so no reported figure
+        was ever affected, but `weights.csv` was wrong for as long as it existed. The
+        rows-sum assertion below is what would have caught it, and is now enforced.
+        """
+        weights = self.values.div(self.nav, axis=0)
+        invested = weights.sum(axis=1)
+        cash_share = self.cash / self.nav
+        assert np.allclose(invested + cash_share, 1.0), \
+            "weights plus the cash residue must account for the whole NAV"
+        return weights
 
 
 def _investable(cfg: Config, value: float, rate: float) -> float:
@@ -271,13 +285,15 @@ def run(cfg: Config, panel: Panel, holdings_map: dict[pd.Timestamp, list[str]],
     # `closes[mask]` would blank the un-held cells to NaN and check those instead.
     assert not (holdings.ne(0.0) & closes.isna()).any().any(), \
         "a held name has no close price"
-    nav = (holdings * closes).sum(axis=1) + cash_series
+    values = holdings * closes
+    nav = values.sum(axis=1) + cash_series
     assert nav.notna().all(), "NaN in the NAV series"
 
     trades = pd.DataFrame(trade_rows, columns=_TRADE_COLUMNS)
     holdings.columns = [panel.symbols[i] for i in holdings.columns]
+    values.columns = holdings.columns
 
-    return BacktestResult(nav=nav, holdings=holdings, trades=trades,
+    return BacktestResult(nav=nav, holdings=holdings, trades=trades, values=values,
                           cash=cash_series, costs=costs, capital=float(capital))
 
 

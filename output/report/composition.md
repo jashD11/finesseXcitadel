@@ -1,114 +1,117 @@
 # Portfolio composition
 
-Target weights at 6 rebalance dates, from `output/sweep/monthly_reset/weights.csv`. The book is equal-weight 1/10 by
-construction (CLAUDE.md §4), so the interest is in *which* names, not how much.
+Target weights at 6 of the 60 rebalance dates, from `output/sweep/monthly_reset/weights.csv`. The book is equal-weight 1/10 by
+construction (CLAUDE.md §4), so the interest is in *which* names, not how much;
+the small deviations from 10.00% are whole-share flooring (B4).
 
 **2021-01-01** — 10 names
 
 | Stock | Weight |
 |---|---|
-| CGPOWER | 0.22% |
-| PATANJALI | 0.04% |
-| LAURUSLABS | 0.03% |
-| ATGL | 0.03% |
-| ADANIENT | 0.02% |
-| ADANIGREEN | 0.01% |
-| TATACOMM | 0.01% |
-| TATAELXSI | 0.01% |
-| DIXON | 0.00% |
-| DIVISLAB | 0.00% |
+| ADANIENT | 10.26% |
+| TATAELXSI | 10.10% |
+| DIXON | 10.04% |
+| TATACOMM | 10.00% |
+| DIVISLAB | 9.96% |
+| ATGL | 9.95% |
+| PATANJALI | 9.94% |
+| LAURUSLABS | 9.93% |
+| ADANIGREEN | 9.84% |
+| CGPOWER | 9.81% |
 
 **2021-11-01** — 10 names
 
 | Stock | Weight |
 |---|---|
-| NATIONALUM | 0.10% |
-| SAIL | 0.08% |
-| CGPOWER | 0.07% |
-| KPITTECH | 0.03% |
-| MAXHEALTH | 0.03% |
-| JSWENERGY | 0.03% |
-| ATGL | 0.01% |
-| ADANIENT | 0.01% |
-| ADANIENSOL | 0.01% |
-| TATAELXSI | 0.00% |
+| ATGL | 10.26% |
+| NATIONALUM | 10.16% |
+| MAXHEALTH | 10.12% |
+| JSWENERGY | 10.04% |
+| SAIL | 10.01% |
+| TATAELXSI | 9.93% |
+| CGPOWER | 9.89% |
+| ADANIENT | 9.89% |
+| KPITTECH | 9.84% |
+| ADANIENSOL | 9.69% |
 
-**2022-08-29** — 10 names
-
-| Stock | Weight |
-|---|---|
-| ADANIPOWER | 0.15% |
-| CGPOWER | 0.04% |
-| BDL | 0.02% |
-| KPITTECH | 0.02% |
-| TIINDIA | 0.00% |
-| ADANIGREEN | 0.00% |
-| SOLARINDS | 0.00% |
-| ADANIENSOL | 0.00% |
-| ATGL | 0.00% |
-| TATAELXSI | 0.00% |
-
-**2023-06-27** — 10 names
+**2022-09-01** — 10 names
 
 | Stock | Weight |
 |---|---|
-| UNIONBANK | 0.13% |
-| IDFCFIRSTB | 0.13% |
-| BANKINDIA | 0.13% |
-| RVNL | 0.08% |
-| BANKBARODA | 0.05% |
-| INDIANB | 0.03% |
-| VBL | 0.03% |
-| CGPOWER | 0.02% |
-| MAZDOCK | 0.02% |
-| KPITTECH | 0.01% |
+| INDHOTEL | 10.37% |
+| BDL | 10.16% |
+| BSE | 10.10% |
+| TATAELXSI | 10.06% |
+| CGPOWER | 10.05% |
+| ATGL | 9.89% |
+| ADANIGREEN | 9.85% |
+| ADANIPOWER | 9.81% |
+| KEI | 9.76% |
+| ADANIENSOL | 9.76% |
 
-**2024-04-30** — 10 names
-
-| Stock | Weight |
-|---|---|
-| SUZLON | 0.22% |
-| IRFC | 0.06% |
-| HUDCO | 0.05% |
-| RVNL | 0.03% |
-| PFC | 0.02% |
-| RECLTD | 0.02% |
-| TATAINVEST | 0.01% |
-| BSE | 0.01% |
-| GVT&D | 0.01% |
-| COCHINSHIP | 0.01% |
-
-**2025-02-21** — 10 names
+**2023-07-03** — 10 names
 
 | Stock | Weight |
 |---|---|
-| KALYANKJIL | 0.02% |
-| MOTILALOFS | 0.02% |
-| GODFRYPHLP | 0.01% |
-| POLICYBZR | 0.01% |
-| GVT&D | 0.01% |
-| BSE | 0.01% |
-| BLUESTARCO | 0.01% |
-| TRENT | 0.00% |
-| POWERINDIA | 0.00% |
-| DIXON | 0.00% |
+| BANKBARODA | 10.30% |
+| UNIONBANK | 10.22% |
+| IDFCFIRSTB | 10.16% |
+| VBL | 10.10% |
+| MAZDOCK | 9.98% |
+| CGPOWER | 9.88% |
+| TIINDIA | 9.85% |
+| RVNL | 9.82% |
+| ABCAPITAL | 9.80% |
+| KPITTECH | 9.73% |
 
-## Most-held names across the whole window
+**2024-05-02** — 10 names
 
-| Stock | Rebalances held |
+| Stock | Weight |
 |---|---|
-| BSE | 574 |
-| CGPOWER | 534 |
-| GVT&D | 511 |
-| ATGL | 475 |
-| RVNL | 470 |
-| MAZDOCK | 411 |
-| KPITTECH | 397 |
-| TATAELXSI | 374 |
-| ADANIENSOL | 373 |
-| ADANIENT | 370 |
-| GODFRYPHLP | 330 |
-| SUZLON | 307 |
-| KALYANKJIL | 284 |
-| HUDCO | 267 |
-| COCHINSHIP | 266 |
+| RECLTD | 10.73% |
+| COCHINSHIP | 10.03% |
+| ETERNAL | 10.03% |
+| IRFC | 9.97% |
+| RVNL | 9.96% |
+| SUZLON | 9.96% |
+| BSE | 9.89% |
+| KALYANKJIL | 9.86% |
+| HUDCO | 9.77% |
+| GVT&D | 9.64% |
+
+**2025-03-03** — 10 names
+
+| Stock | Weight |
+|---|---|
+| POWERINDIA | 10.43% |
+| PAYTM | 10.41% |
+| DIXON | 10.11% |
+| MUTHOOTFIN | 10.09% |
+| MAZDOCK | 10.05% |
+| COROMANDEL | 10.03% |
+| GVT&D | 9.97% |
+| RVNL | 9.73% |
+| COCHINSHIP | 9.63% |
+| BSE | 9.47% |
+
+## Longest-held names across the whole window
+
+Out of 1,235 trading days in the window. A name can be re-picked many times, so `times bought` counts entries, not names.
+
+| Stock | Days held | Times bought |
+|---|---|---|
+| BSE | 574 | 19 |
+| CGPOWER | 534 | 14 |
+| GVT&D | 511 | 13 |
+| ATGL | 475 | 11 |
+| RVNL | 470 | 15 |
+| MAZDOCK | 411 | 9 |
+| KPITTECH | 397 | 12 |
+| TATAELXSI | 374 | 12 |
+| ADANIENSOL | 373 | 11 |
+| ADANIENT | 370 | 12 |
+| GODFRYPHLP | 330 | 13 |
+| SUZLON | 307 | 10 |
+| KALYANKJIL | 284 | 10 |
+| HUDCO | 267 | 10 |
+| POWERINDIA | 266 | 10 |

@@ -185,29 +185,46 @@ def numbers_pack(cell: str, out: Path) -> None:
 
 
 def composition(cell: str, out: Path, show: int = 6) -> None:
-    """Guidelines §9 asks for portfolio composition and weights."""
+    """
+    Guidelines §9 asks for portfolio composition and weights.
+
+    `weights.csv` is a **daily** series, not one row per rebalance, so the rebalance
+    dates are taken from the trade log — the days the book was actually re-picked — and
+    a holding count is reported in days, which is what the daily frame can support.
+    Counting daily rows and calling them rebalances would overstate the number by ~20x.
+    """
     weights = pd.read_csv(cell_dir(cell) / "weights.csv", index_col=0, parse_dates=True)
+    trades = pd.read_csv(cell_dir(cell) / "trades.csv", parse_dates=["date"])
     held = weights.loc[:, (weights != 0).any()]
-    dates = list(held.index[:: max(1, len(held) // show)])[:show]
+
+    rebalances = sorted(trades["date"].unique())
+    picked = [rebalances[i] for i in
+              range(0, len(rebalances), max(1, len(rebalances) // show))][:show]
 
     lines = ["# Portfolio composition", "",
-             f"Target weights at {show} rebalance dates, from "
-             f"`output/sweep/{cell}/weights.csv`. The book is equal-weight 1/10 by",
-             "construction (CLAUDE.md §4), so the interest is in *which* names, not how much.",
+             f"Target weights at {len(picked)} of the {len(rebalances)} rebalance dates, "
+             f"from `output/sweep/{cell}/weights.csv`. The book is equal-weight 1/10 by",
+             "construction (CLAUDE.md §4), so the interest is in *which* names, not how much;",
+             "the small deviations from 10.00% are whole-share flooring (B4).",
              ""]
-    for day in dates:
+    for day in picked:
         row = held.loc[day]
         row = row[row > 0].sort_values(ascending=False)
-        lines += [f"**{day.date()}** — {len(row)} names",
+        lines += [f"**{pd.Timestamp(day).date()}** — {len(row)} names",
                   "",
                   "| Stock | Weight |", "|---|---|"]
         lines += [f"| {name} | {w * 100:.2f}% |" for name, w in row.items()]
         lines.append("")
 
-    counts = (held > 0).sum().sort_values(ascending=False)
-    lines += ["## Most-held names across the whole window", "",
-              "| Stock | Rebalances held |", "|---|---|"]
-    lines += [f"| {name} | {n} |" for name, n in counts.head(15).items()]
+    days_held = (held > 0).sum().sort_values(ascending=False)
+    picks = trades[trades["side"] == "BUY"].groupby("symbol").size()
+    lines += ["## Longest-held names across the whole window", "",
+              f"Out of {len(held.index):,} trading days in the window. A name can be "
+              f"re-picked many times, so `times bought` counts entries, not names.",
+              "",
+              "| Stock | Days held | Times bought |", "|---|---|---|"]
+    lines += [f"| {name} | {n} | {int(picks.get(name, 0))} |"
+              for name, n in days_held.head(15).items()]
     out.write_text("\n".join(lines) + "\n")
     print(f"[report] composition -> {out}")
 
