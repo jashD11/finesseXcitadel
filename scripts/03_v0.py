@@ -2,7 +2,7 @@
 """
 Phase 2: V0 end-to-end.
 
-The null model (CLAUDE.md §4): 12-1 momentum, top 10, equal weight, quarterly, no
+The null model (docs/PROJECT.md §4): 12-1 momentum, top 10, equal weight, quarterly, no
 buffer, no optimiser, zero fitted parameters. Everything after this is measured as a
 delta against the number it prints.
 
@@ -28,7 +28,11 @@ from src import (backtest, calendar, clean, events, features, metrics,  # noqa: 
                  select, universe)
 from src.config import load  # noqa: E402
 
-AS_OF = "2026-08-28"
+# The snapshot every analysis script reads. Sourced from config rather than repeated
+# here: the same date lived in four files until 2026-09-02, and a *different* duplicated
+# universe count is exactly what silently broke a cold `01_fetch.py` (see src/fetch.py).
+# config.yaml is the single source of every value in this repo, dates included.
+AS_OF = str(load()["universe.snapshot"])
 
 # B8 (frozen): the stress window is a *separate* backtest that restarts with the full
 # capital on the first trading day of 2026. Nothing carries over from 2021-25 — no
@@ -130,7 +134,7 @@ def main() -> int:
                     help="main = 2021-25 (scored); stress = Jan-Jun 2026 (B8, rejection "
                          "filter only)")
     ap.add_argument("--calendar", default=None,
-                    help="override execution.rebalance_calendar (FREQ grid, CLAUDE.md §11)")
+                    help="override execution.rebalance_calendar (FREQ grid, docs/PROJECT.md §11)")
     ap.add_argument("--weighting", default=None, choices=("reset", "drift"),
                     help="override weighting.reset_to_target (B3)")
     ap.add_argument("--lookback", type=int, default=None,

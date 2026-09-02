@@ -1,5 +1,5 @@
 """
-The noise band (CLAUDE.md §5) — the decision rule for everything after V0.
+The noise band (docs/PROJECT.md §5) — the decision rule for everything after V0.
 
 D2 is frozen: 10,000 draws, resampled at every rebalance date, without replacement,
 from the as-of eligible set, charged the same costs, through the same engine.

@@ -108,7 +108,7 @@ makes the comparison below a measurement rather than a claim:
 | **Today's 200 constituents (mandated)** | **₹8,76,46,846** (+876.5%) | +284.9% | +592 pp |
 | Point-in-time membership (A17) | ₹3,88,03,708 (+388.0%) | +151.6% | +236 pp |
 
-**We report the mandated number and disclose what it contains.** CLAUDE.md §10 keeps the
+**We report the mandated number and disclose what it contains.** PROJECT.md §10 keeps the
 488-percentage-point measurement as a stated limitation, because a number that large,
 measurable with the code in this repo, and left unmentioned would be the single most
 damaging omission in the report.
@@ -302,7 +302,7 @@ flagged and disclosed.
 > risk did not materialise for V0. It is *not* closed in general: any future variant that
 > holds either name across those dates must re-run this check.
 
-**Rider exercised 2026-08-27 — and it fired.** The `FREQ` grid (CLAUDE.md §11) added seven
+**Rider exercised 2026-08-27 — and it fired.** The `FREQ` grid (PROJECT.md §11) added seven
 variants, and the standing re-check found that **weekly and daily rebalancing both hold
 VEDL across its 2026-04-30 demerger**, at roughly a 10% book weight, for a phantom loss of
 **6.2–6.8% of NAV** in the stress window. Quarterly and monthly hold no flagged name across
@@ -383,7 +383,7 @@ config switch so the sensitivity can be measured rather than argued about.
 ### A19 · Should Nifty Smallcap 100 be in the universe? `RESOLVED 2026-09-02 — no, on measurement`
 **No. Measured, pre-registered, and rejected on its own criterion — it loses money.**
 
-The guidelines permit all three indices. CLAUDE.md §6 excluded the third by *choice* and
+The guidelines permit all three indices. PROJECT.md §6 excluded the third by *choice* and
 §8 backlog item 3 called a midcap/smallcap tilt "the largest single PNL lever". Neither was
 ever measured, so on 2026-09-02 it was: today's Smallcap 100 added to the universe
 (`scripts/11_smallcap_universe.py`), nothing else changed — same engine, same calendar
@@ -399,8 +399,9 @@ frames, and by −5.1σ in the submitted one.** Recorded as a failed prediction 
 reworded.
 
 **And the mechanism is the interesting part, because the universe did get better.** The
-equal-weight benchmark *rises* on the wider universe, +284.9% → +307.1%: the smallcap names
-were, collectively, a good place to have money. The **selection rule** is what got worse.
+equal-weight benchmark *rises* on the wider universe in both frames — +284.90% → +307.11%
+at quarterly and +280.55% → +299.12% at monthly: the smallcap names were, collectively, a
+good place to have money. The **selection rule** is what got worse.
 Widening a top-10-of-190 rule to top-10-of-290 adds 100 high-variance candidates, and
 12-1 momentum has no way to tell a smallcap that ran because it is compounding from one
 that ran because it is small and volatile. The extra names win the ranking on noise and
@@ -414,7 +415,7 @@ dilution, arriving from the universe side instead.
 Yahoo's history, 2023-12-07 → 2024-02-06 — a data-source gap, not a delisting. A9 caps
 forward-filling at 5 sessions, and filling 41 would feed a stale price into a 252-day
 momentum window, which is a fabricated signal rather than a missing one. It is dropped
-exactly as the six unpriceable historical members are (CLAUDE.md §10), so the arm ran on 299
+exactly as the six unpriceable historical members are (PROJECT.md §10), so the arm ran on 299
 names. The check is general, not a special case: `11_smallcap_universe.py` refuses any
 added name whose worst interior gap exceeds `clean.ffill_max_days`, and prints what it
 dropped. The exclusion errs against the arm — Force Motors ran hard in 2024 — which is the
@@ -429,7 +430,7 @@ of 2021, which *is* the start of the mandated window — so B7 stops being a sep
 question. And quarter boundaries need no defending, where a fixed 63-day spacing drifts
 onto arbitrary dates over five years.
 
-Not locked as the only frequency ever tested. CLAUDE.md §7 says holding period is one of
+Not locked as the only frequency ever tested. PROJECT.md §7 says holding period is one of
 the two levers that actually move the number, so alternative cadences are queued as
 backlog trials. Each alternative cadence gets its own ledger line.
 
@@ -497,7 +498,7 @@ size is fixed at 10, so `#exits == #entries` always, and the first rebalance has
 incumbents and is therefore identical to reset — a free assertion.
 
 Config: `weighting.reset_to_target`. The key already existed and the engine ignored it;
-`backtest.py` and `noise.py` are now genuinely weighting-agnostic, which CLAUDE.md §11
+`backtest.py` and `noise.py` are now genuinely weighting-agnostic, which PROJECT.md §11
 requires or the noise band cannot adjudicate the variant.
 
 **Resolved 2026-08-28, and the answer reversed when the universe was fixed.**
@@ -712,7 +713,7 @@ C2 was frozen at the start of the project on the published 12-1 convention, and 
 one was asserted, which is the weakest position to be in when a panel asks "did you check
 the lookback?"
 
-The `SIG` grid (CLAUDE.md §11): `lookback ∈ {126, 189, 252} × skip ∈ {0, 21}`, six cells in
+The `SIG` grid (PROJECT.md §11): `lookback ∈ {126, 189, 252} × skip ∈ {0, 21}`, six cells in
 the submitted frame (monthly + reset), each against the band that frame already had —
 σ = ₹74,70,579, drawn before the grid was conceived. **No band was re-drawn**, because a
 random draw ignores the signal entirely, so the yardstick could not move.
@@ -822,7 +823,7 @@ carries into V1 intact and any V1 gain is attributable to the feature set alone.
 
 **A second vector is pre-registered as an arm, which is not the same thing as tuning.**
 `V1-tilt` uses **2 / 1 / 1** — momentum weighted as much as the other two combined —
-declared in `CLAUDE.md` §11 before anything ran and **run unconditionally**, so it is one
+declared in `PROJECT.md` §11 before anything ran and **run unconditionally**, so it is one
 more pre-registered configuration the noise band adjudicates, not a response to a
 disappointing number. The distinction matters: choosing the tilt *after* seeing that the
 equal-weight composite lost PNL would fit the scoring window and is precisely what this
@@ -845,7 +846,7 @@ any V1 result existed** and C9 quietly foreclosed it. Judging a whole axis on tw
 the single-vector bias that backlog item was written to remove, and reporting "the composite
 lost" on two weight vectors overstates what two vectors can establish.
 
-**Five more vectors, declared as one set in `CLAUDE.md` §11 (`WGT`) before any of them ran**,
+**Five more vectors, declared as one set in `PROJECT.md` §11 (`WGT`) before any of them ran**,
 with six pre-registered predictions and the expected shape stated in advance:
 
 | Vector | Weights | `w_mom` | Role |
@@ -885,7 +886,7 @@ Residual momentum (F2) was in the proposed set and is **out**. `PLAN.md` set a r
 threshold of 0.70 for F8 against F1 and never applied one to F2. Phase 0 measured both:
 F8 comes in at **+0.43**, F2 at **+0.883** with 7.8 of the same 10 names selected. The
 proposed four-measurement score was three concepts occupying four weight slots, which is
-exactly what `CLAUDE.md` §6's one-per-concept rule exists to prevent.
+exactly what `PROJECT.md` §6's one-per-concept rule exists to prevent.
 
 The overlap is arithmetic rather than a property of this window: `RM = Mom − β·Mom[market]`
 subtracts one scalar times β, and β's spread (0.196–2.244) is small against the spread of
@@ -893,7 +894,7 @@ subtracts one scalar times β, and β's spread (0.196–2.244) is small against 
 in other periods.
 
 F2 is not thereby discarded. The ~12% of ranking it does not share with F1 is the
-beta-driven part, which `CLAUDE.md` §5 identified as V0's dominant exposure. It is held
+beta-driven part, which `PROJECT.md` §5 identified as V0's dominant exposure. It is held
 back as a **single-change Phase 3 arm** — F2 swapped for F1, nothing else altered — which
 is a cleaner test of the residual-momentum hypothesis than burying it inside a composite.
 
@@ -909,7 +910,7 @@ zero-fitted-parameter defence intact.
 ### C11 · What counts as "the market" when stripping out market movement? `FROZEN 2026-08-30`
 **The equal-weight return of the point-in-time eligible universe**, not the Nifty 100 index.
 
-It is the benchmark `CLAUDE.md` §7's attribution ladder and the noise band already measure
+It is the benchmark `PROJECT.md` §7's attribution ladder and the noise band already measure
 against, so a residual means "beat your own eligible set" — the same question §5 asks.
 
 Phase 0 measured the choice as nearly inert: between the two proxies, ρ is **+0.934** for
@@ -1054,12 +1055,12 @@ is not. `tests/` asserts it.
 
 **Equal-weight portfolio of the full universe**, rebalanced on our dates, through our
 engine. This is the analytically useful one: it is the only comparison that separates
-*stock-picking* from *tilting toward mid-caps*, and CLAUDE.md §7 says the tilt is worth
+*stock-picking* from *tilting toward mid-caps*, and PROJECT.md §7 says the tilt is worth
 more than the selection rule. Beating this is evidence of selection skill; beating an
 index is not.
 
 **Nifty 100 (`^CNX100`)**, the mandate-facing comparison. Guidelines §8 names Nifty 100 or
-Nifty 500 as examples; Nifty 500 is not in our snapshot, and CLAUDE.md §13 records that
+Nifty 500 as examples; Nifty 500 is not in our snapshot, and PROJECT.md §13 records that
 the Yahoo midcap index series is unreliable, so Nifty 100 is the one index we can quote
 without caveat.
 

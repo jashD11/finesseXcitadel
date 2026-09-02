@@ -23,7 +23,7 @@ def overridden_days(cfg: Config) -> pd.DatetimeIndex:
     names printed volume and 191 closes simply repeat the previous session clears that bar
     and is not a trading day either. Those are listed explicitly, with the evidence in the
     file, rather than by loosening A8 into a fitted participation threshold — see
-    `DECISIONS.md` A8.
+    `docs/DECISIONS.md` A8.
 
     Evidence-carrying like the corporate-action overrides: a row is excluded only when
     ``applied`` is true, so a suspected day can be recorded without acting on it.
@@ -87,7 +87,7 @@ def phantom_days(cfg: Config, prices: pd.DataFrame) -> pd.DatetimeIndex:
     return zero_volume.union(overridden_days(cfg))
 
 
-# B1 (amended 2026-08-27). CLAUDE.md §7 puts holding period among the levers that move
+# B1 (amended 2026-08-27). docs/PROJECT.md §7 puts holding period among the levers that move
 # the number, so alternative cadences are ledger trials. B1 used to claim any cadence was
 # "a one-word config change, not a code path". That was true only for month-anchored
 # cadences: weekly and daily have no representation in an anchor-*month* map at all. The

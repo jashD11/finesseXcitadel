@@ -1,7 +1,7 @@
 """
 Decision gating.
 
-`DECISIONS.md` is the ledger; this module is the enforcement. Nothing in this repo
+`docs/DECISIONS.md` is the ledger; this module is the enforcement. Nothing in this repo
 is allowed to run on a default for an unresolved design decision, so both failure
 modes below are loud exceptions rather than fallbacks.
 """
@@ -26,6 +26,6 @@ def blocked(decision: str, what: str) -> "NotImplementedError":
     """
     return NotImplementedError(
         f"blocked on decision {decision}: {what}. "
-        f"Resolve it, record it in DECISIONS.md, set the value in config.yaml, "
+        f"Resolve it, record it in docs/DECISIONS.md, set the value in config.yaml, "
         f"then implement."
     )

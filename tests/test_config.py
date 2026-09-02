@@ -128,7 +128,7 @@ def test_filling_in_a_pending_decision_raises(tmp_path, monkeypatch):
 
 
 def test_frozen_decisions_are_present_and_not_null():
-    """Decisions recorded FROZEN in DECISIONS.md must carry a value."""
+    """Decisions recorded FROZEN in docs/DECISIONS.md must carry a value."""
     cfg = load()
     for key in ("prices.return_basis", "prices.price_field", "fetch.source",
                 "fetch.start", "eligibility.require_full_window",

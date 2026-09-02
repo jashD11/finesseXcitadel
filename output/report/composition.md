@@ -1,7 +1,7 @@
 # Portfolio composition
 
 Target weights at 6 of the 60 rebalance dates, from `output/sweep/monthly_reset/weights.csv`. The book is equal-weight 1/10 by
-construction (CLAUDE.md §4), so the interest is in *which* names, not how much;
+construction (docs/PROJECT.md §4), so the interest is in *which* names, not how much;
 the small deviations from 10.00% are whole-share flooring (B4).
 
 **2021-01-01** — 10 names

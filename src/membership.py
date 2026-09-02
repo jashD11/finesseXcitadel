@@ -318,7 +318,7 @@ def membership_spans(cfg: Config, today: dict[str, set[str]], as_of: dt.date,
 
     Columns `index_name, symbol, effective_from, effective_to`, with `effective_to` empty
     for a membership that is still open at `as_of`. Written to `data/raw/` so the analysis
-    path reads a file rather than re-parsing PDFs (CLAUDE.md §12).
+    path reads a file rather than re-parsing PDFs (docs/PROJECT.md §12).
     """
     history = roll_back(cfg, today, as_of, until)
     # oldest first; each entry is the state holding from that date until the next.

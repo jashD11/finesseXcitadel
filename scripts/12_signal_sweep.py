@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-The `SIG` grid — momentum lookback x skip (CLAUDE.md §11, pre-registered 2026-09-02).
+The `SIG` grid — momentum lookback x skip (docs/PROJECT.md §11, pre-registered 2026-09-02).
 
 C2 froze `signal.lookback = 252` and `signal.skip = 21` on the published 12-1 convention
 and the surface was never swept. This runs it: 3 lookbacks x 2 skips, every cell through

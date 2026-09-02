@@ -2,8 +2,8 @@
 """
 The `WGT` weight surface — feature weights x rebalance cadence x weighting rule.
 
-Pre-registered in CLAUDE.md §11 before any cell was run, and closing §8's backlog item 1
-(`DECISIONS.md` C9-r). Seven weight vectors through six frames, every cell through the
+Pre-registered in docs/PROJECT.md §11 before any cell was run, and closing §8's backlog item 1
+(`docs/DECISIONS.md` C9-r). Seven weight vectors through six frames, every cell through the
 identical engine, each scored against a point-in-time noise band drawn 2026-08-28 — before
 any of these arms existed. **No band is re-drawn here**; `05_v1.py` reads each cell's sigma
 back and asserts it.

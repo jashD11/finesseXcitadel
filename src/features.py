@@ -2,7 +2,7 @@
 Signal computation. Causal by construction: every feature for a rebalance at t is
 computed from data through the close of t-1 (B2, frozen).
 
-The V1 feature set is frozen as `DECISIONS.md` C10: **three** features, one concept each —
+The V1 feature set is frozen as `docs/DECISIONS.md` C10: **three** features, one concept each —
 12-1 momentum (how much it rose), information discreteness (how the rise arrived), and
 drawdown from the 252-day peak (where it sits against its own high). Residual momentum is
 deliberately *not* in the composite (it ranks the cross-section 0.883 like plain momentum)

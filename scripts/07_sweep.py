@@ -2,7 +2,7 @@
 """
 Phase 5: the `FREQ` grid — rebalance cadence x weighting rule.
 
-Pre-registered in CLAUDE.md §11 before any cell was run. 4 cadences x {reset, drift},
+Pre-registered in docs/PROJECT.md §11 before any cell was run. 4 cadences x {reset, drift},
 every cell through the identical engine, each with its own noise band on its own calendar
 and weighting (D2), scored twice (D11-r): `z_own` against that cell's band, `z_qtr`
 against the frozen quarterly sigma so the rows may be compared to each other.

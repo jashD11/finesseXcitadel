@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Phase 0 (PLAN.md): feature diagnostics.
+Phase 0 (docs/PLAN.md): feature diagnostics.
 
 Computes every candidate feature F1-F10 on every quarterly rebalance date in the scored
 window and reports how they relate to one another. **No selection, no backtest, no PNL.**
 Nothing here chooses a configuration; the point is to answer the factual questions D1-D6
-rest on before those decisions are put to the user (CLAUDE.md §2).
+rest on before those decisions are put to the user (docs/PROJECT.md §2).
 
 Three properties make this a diagnostic rather than strategy code:
 
@@ -18,7 +18,7 @@ Three properties make this a diagnostic rather than strategy code:
 - **Nothing is ranked on an outcome.** The only rankings taken are cross-sectional, on
   the rebalance date, and are never carried into a portfolio.
 
-Causality (CLAUDE.md §2): every feature for a rebalance at `t` is computed from closes
+Causality (docs/PROJECT.md §2): every feature for a rebalance at `t` is computed from closes
 through `formation_cutoff(t)` = t-1 (B2). Positional slices end at `cutoff_pos` and the
 script asserts it. The eligible set is `universe.eligible_at(t)`, the same gate V0 uses,
 so the cross-section here is exactly the cross-section a V1 selector would face.
@@ -39,19 +39,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src import calendar, clean, features, universe  # noqa: E402
 from src.config import load  # noqa: E402
 
-AS_OF = "2026-08-28"
+# The snapshot every analysis script reads. Sourced from config rather than repeated
+# here: the same date lived in four files until 2026-09-02, and a *different* duplicated
+# universe count is exactly what silently broke a cold `01_fetch.py` (see src/fetch.py).
+# config.yaml is the single source of every value in this repo, dates included.
+AS_OF = str(load()["universe.snapshot"])
 
 # Diagnostic-only constants. These are not strategy parameters and deliberately do not
 # enter config.yaml: config.yaml is the single source for values that change a reported
 # number, and nothing here reaches a number that gets reported as a result.
 #
-# Every quarterly rebalance in the scored window is used rather than PLAN.md's "~8".
+# Every quarterly rebalance in the scored window is used rather than docs/PLAN.md's "~8".
 # Sampling 8 of 20 would be a choice needing a defence; taking all 20 costs two seconds
 # and needs none.
 CADENCE = "quarterly_first_trading_day"
 
 # Short window shared by F5 (realised vol) and F10 (rupee turnover). 60 and 20 sessions
-# are the conventional definitions PLAN.md states; they are printed alongside the results
+# are the conventional definitions docs/PLAN.md states; they are printed alongside the results
 # so a reader can see they were not tuned.
 VOL_WINDOW = 60
 TURNOVER_WINDOW = 20
@@ -64,7 +68,7 @@ FEATURES = ["F1_mom_12_1", "F2_resid_mom", "F3_beta", "F4_idio_vol", "F5_total_v
             "F10_turnover"]
 
 
-# ── the formation-window regression (PLAN.md "Why F2, F3 and F4 come from one
+# ── the formation-window regression (docs/PLAN.md "Why F2, F3 and F4 come from one
 #     regression") ────────────────────────────────────────────────────────────
 
 
@@ -144,7 +148,7 @@ def compute(cfg, panel, day: pd.Timestamp, eligible: list[str],
         mom_m = float(mkt[name].sum())
         raw = log_mom - f["beta"] * mom_m
         assert np.allclose(raw, f["T"] * f["alpha"], atol=1e-9), \
-            "RM != T*alpha; the decomposition in PLAN.md is not what was computed"
+            "RM != T*alpha; the decomposition in docs/PLAN.md is not what was computed"
         out[f"F2raw_{name}"] = raw                                    # D3 (a)
         out[f"F2std_{name}"] = raw / (f["sd_eps"] * np.sqrt(f["T"]))  # D3 (b)
         out[f"F3beta_{name}"] = f["beta"]
@@ -301,9 +305,9 @@ def main() -> int:
     print(f"     rho(F1, F9_info_disc)     {band('F9_info_disc')}")
     print(f"     rho(F1, F7_skip_month)    {band('F7_skip_month')}")
 
-    # PLAN.md aims the redundancy threshold at F8 and never states one for F2. If F2 is
+    # docs/PLAN.md aims the redundancy threshold at F8 and never states one for F2. If F2 is
     # a near-copy of F1 the composite is momentum twice, which is the exact failure
-    # CLAUDE.md §6's "one per concept" rule exists to prevent, so it is measured too --
+    # docs/PROJECT.md §6's "one per concept" rule exists to prevent, so it is measured too --
     # under both D3 variants, since D3 is still open.
     for col, lab in [("F2raw_ew_universe", "raw RM"), ("F2std_ew_universe", "std RM")]:
         r = np.mean([g[["F1_mom_12_1", col]].corr(method="spearman").iloc[0, 1]
@@ -313,7 +317,7 @@ def main() -> int:
         print(f"     rho(F1, {lab})  {r:+.3f}   top-10 overlap ranking on F1 alone "
               f"vs {lab} alone: {ov:.1f}/10")
 
-    print("\n     redundancy PLAN.md warns about: var ~ beta^2*var_m + var_eps")
+    print("\n     redundancy docs/PLAN.md warns about: var ~ beta^2*var_m + var_eps")
     print(f"     rho(F5_total_vol, F3_beta)      {sp.loc['F5_total_vol','F3_beta']:+.2f}")
     print(f"     rho(F5_total_vol, F4_idio_vol)  {sp.loc['F5_total_vol','F4_idio_vol']:+.2f}")
     print(f"     rho(F3_beta,     F4_idio_vol)   {sp.loc['F3_beta','F4_idio_vol']:+.2f}")

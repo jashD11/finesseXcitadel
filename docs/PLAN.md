@@ -6,7 +6,7 @@ and every design decision that route requires. Kept as written rather than rewri
 the plan that was followed, including to a negative result.
 
 **How this file is used.** Phases are worked **one at a time**, each opened in plan mode.
-A phase's decisions are answered *before* its code is written (`CLAUDE.md` §2). When a
+A phase's decisions are answered *before* its code is written (`PROJECT.md` §2). When a
 decision is answered it moves to `DECISIONS.md`, which stays the authoritative ledger —
 this file only holds the *queue*. Nothing here is a decision that has been taken.
 
@@ -22,16 +22,16 @@ open entry in `DECISIONS.md`, the original ID is given.
 | ~~**0**~~ | **DONE 2026-08-29.** Feature diagnostics: all 10 candidates on all 20 quarterly rebalance dates (not ~8 — taking every date needs no sampling defence), 3,809 name-dates. `scripts/09_feature_diagnostics.py`, artefacts `output/diagnostics/`, write-up `NOTES.md` N3. | **none** | 2 s |
 | ~~**1**~~ | **DONE 2026-08-30.** Feature set and definitions frozen as `DECISIONS.md` **C10–C16**. Phase 0 overturned D1, D3 and D5, and surfaced two decisions this document omitted. | D1–D5 **+2 omitted** | — |
 | ~~**2**~~ | **DONE 2026-08-30.** Combination rule frozen as **C17** (scaled ranks); C3 and C9 closed, C4 and C8 `DEAD`, C5 `NON-ISSUE`. `cfg.pending()` is empty for the first time. | D6–D11 | — |
-| ~~**3**~~ | **DONE 2026-08-30.** Five-arm `V1` slate and six predictions written into `CLAUDE.md` §11 before any arm ran. | D12–D14 | — |
-| ~~**4**~~ | **DONE 2026-08-30.** `features.py` + `05_v1.py` built, 5 arms run, no band re-run. **All five lost, −3.47σ to −5.22σ.** V1 is not adopted; `PIT-wk-drift` remains the submission. `NOTES.md` N6, `CLAUDE.md` §11. | none | 4 min |
+| ~~**3**~~ | **DONE 2026-08-30.** Five-arm `V1` slate and six predictions written into `PROJECT.md` §11 before any arm ran. | D12–D14 | — |
+| ~~**4**~~ | **DONE 2026-08-30.** `features.py` + `05_v1.py` built, 5 arms run, no band re-run. **All five lost, −3.47σ to −5.22σ.** V1 is not adopted; `PIT-wk-drift` remains the submission. `NOTES.md` N6, `PROJECT.md` §11. | none | 4 min |
 | ~~**5**~~ | **DONE 2026-08-30.** The weighting axis went further than two cells: `WGT`, 7 vectors × 6 frames = 42, all rejected. | D15–D16 | 100 s |
 | ~~**6**~~ | **DONE.** 2026 filter run on every survivor; all pass. §9 held — it never selected anything. | none | — |
-| ~~**7**~~ | **DONE 2026-09-02.** Configuration frozen: **`MAND-mo-reset`**, ₹10,76,49,806. See `CLAUDE.md` §15. Report scaffolded in `REPORT_OUTLINE.md`. | none | — |
+| ~~**7**~~ | **DONE 2026-09-02.** Configuration frozen: **`MAND-mo-reset`**, ₹10,76,49,806. See `PROJECT.md` §15. Report scaffolded in `REPORT_OUTLINE.md`. | none | — |
 
 **This file is now closed.** It planned the route to a V1 composite; the composite was
 built, measured across 46 arms and two universes, and rejected every time. The route it
 describes was walked in full and the destination turned out not to be worth arriving at,
-which is a result rather than a failure of the plan. `CLAUDE.md` §15 carries live status.
+which is a result rather than a failure of the plan. `PROJECT.md` §15 carries live status.
 
 Phase 0 runs without any answer and is a prerequisite for D1: F8's inclusion turns on a
 correlation this project has not measured. It introduces no selection bias because nothing
@@ -106,7 +106,7 @@ volatility (33.06%) as higher than all 10,000 random draws.
 > **The 0.70 redundancy threshold was aimed at the wrong feature.** It is stated here for
 > F8 and stated nowhere for F2. Measured: **F8 vs F1 = +0.43** (passes comfortably);
 > **F2 vs F1 = +0.883**, selecting **7.8 of the same 10 names**. Option (a) was therefore
-> three concepts in four weight slots — the exact failure `CLAUDE.md` §6's one-per-concept
+> three concepts in four weight slots — the exact failure `PROJECT.md` §6's one-per-concept
 > rule exists to prevent — and the fallback in option (b) would have dropped the feature
 > that passes while keeping the one that fails.
 >
@@ -225,7 +225,7 @@ F7 reversal — a separate bet, not a refinement; see D10.
 ### Two Phase 1 decisions this document omitted — found 2026-08-30
 
 Recorded here because a plan that hid two blocking decisions is a fact about the plan, and
-`CLAUDE.md` §2 is explicit that if it is unclear whether something counts as a decision,
+`PROJECT.md` §2 is explicit that if it is unclear whether something counts as a decision,
 it counts.
 
 **D1b · F8's sign — `ANSWERED as C15: positive, nearer the high scores higher`.** The

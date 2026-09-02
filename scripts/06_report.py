@@ -15,7 +15,7 @@ Outputs:
     output/report/composition.md  portfolio composition and weights at each rebalance
     output/figures/*.png          the four charts
 
-CLAUDE.md §2: no fabricated numbers, ever. A figure that is not computed from data in
+docs/PROJECT.md §2: no fabricated numbers, ever. A figure that is not computed from data in
 this repo does not get stated, and this is the mechanism that makes that cheap to obey.
 """
 
@@ -35,7 +35,7 @@ sys.path.insert(0, str(ROOT))
 
 from src.config import load  # noqa: E402
 
-#: The submitted configuration (CLAUDE.md §11, selected on 2021-25 PNL alone).
+#: The submitted configuration (docs/PROJECT.md §11, selected on 2021-25 PNL alone).
 SUBMISSION_CELL = "monthly_reset"
 BASELINE_CELL = "quarterly_reset"
 
@@ -96,7 +96,7 @@ def numbers_pack(cell: str, out: Path) -> None:
         "# Report numbers — generated, never typed",
         "",
         f"Every figure below is read from `output/sweep/{cell}/`. Regenerate with",
-        "`python3 scripts/06_report.py`. Nothing here is hand-entered (CLAUDE.md §2).",
+        "`python3 scripts/06_report.py`. Nothing here is hand-entered (docs/PROJECT.md §2).",
         "",
         "## 1 · Required metrics (guidelines §7)",
         "",
@@ -127,7 +127,7 @@ def numbers_pack(cell: str, out: Path) -> None:
         f"{fmt(float(main['benchmark_nifty100_index_return']), 'pct')} | "
         f"{fmt(float(main['benchmark_nifty100_index_pnl']), 'rs')} |",
         "",
-        "## 3 · The significance band (CLAUDE.md §5)",
+        "## 3 · The significance band (docs/PROJECT.md §5)",
         "",
         "10,000 random 10-stock portfolios, same universe, same dates, same costs, same",
         "engine. The only thing that differs is which names are held.",
@@ -162,7 +162,7 @@ def numbers_pack(cell: str, out: Path) -> None:
         "## 4 · Out-of-sample stress window (guidelines §6)",
         "",
         "Fresh ₹1 crore on 2026-01-01, nothing carried over. A **one-way rejection",
-        "filter** — no parameter was ever chosen by looking at it (CLAUDE.md §9).",
+        "filter** — no parameter was ever chosen by looking at it (docs/PROJECT.md §9).",
         "",
         "| | H1 2026 |",
         "|---|---|",
@@ -204,7 +204,7 @@ def composition(cell: str, out: Path, show: int = 6) -> None:
     lines = ["# Portfolio composition", "",
              f"Target weights at {len(picked)} of the {len(rebalances)} rebalance dates, "
              f"from `output/sweep/{cell}/weights.csv`. The book is equal-weight 1/10 by",
-             "construction (CLAUDE.md §4), so the interest is in *which* names, not how much;",
+             "construction (docs/PROJECT.md §4), so the interest is in *which* names, not how much;",
              "the small deviations from 10.00% are whole-share flooring (B4).",
              ""]
     for day in picked:

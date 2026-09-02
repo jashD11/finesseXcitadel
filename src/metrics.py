@@ -1,5 +1,5 @@
 """
-Reported metrics (CLAUDE.md §1, guidelines §7) and round-trip construction.
+Reported metrics (docs/PROJECT.md §1, guidelines §7) and round-trip construction.
 
 D6/D7/D8 are frozen: a trade is one completed entry-to-exit holding, accuracy and
 gain-to-loss are computed on that basis and dual-reported. D10 is frozen: a position
@@ -66,7 +66,7 @@ def sharpe(cfg: Config, result: BacktestResult, capital: float) -> float:
 
     Deviates from the guidelines as literally printed — §7 omits the sqrt(252), which
     mismatches units and inflates the ratio ~16x. The deviation is disclosed rather than
-    silently applied; see DECISIONS.md D4.
+    silently applied; see docs/DECISIONS.md D4.
     """
     rets = daily_returns(result)
     sd = float(rets.std(ddof=int(cfg["metrics.sharpe_ddof"])))

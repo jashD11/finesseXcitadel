@@ -891,7 +891,7 @@ Declared before being run, so they are not post-hoc fishing.
 | `FREQ` | **The frequency sweep — 8 arms, declared 27 Aug 2026 as one grid.** 4 cadences × 2 weighting rules, every cell through the identical engine. Absorbs `B3-drift` as its quarterly-drift cell. | §7 records holding period as untested and asserts "costs do not constrain it"; `DECISIONS.md` B1 queued alternative cadences. | 5 |
 | `V1` | **The composite slate — 5 arms, declared 30 Aug 2026 before any arm was run.** The §6 feature set through the identical engine, plus the rank buffer, the residual-momentum swap and a second weight vector. | `DECISIONS.md` C10–C17; `PLAN.md` Phases 2–4. | 4 |
 | `SIG` | **The signal grid — 6 cells, declared 2 Sep 2026 before any cell was run.** `signal.lookback ∈ {126, 189, 252}` × `signal.skip ∈ {0, 21}`, in the selected frame. | C2 froze 252/21 on external evidence and it was **never swept**. "Did you check the lookback?" is the first question a panel asks about a momentum rule. | 8 |
-| `SMALL` | **The Smallcap 100 arm — declared 2 Sep 2026 before it was run.** Today's Nifty Smallcap 100 added to the universe; nothing else changes. | Guidelines §2 permits all three indices; CLAUDE.md §6 excluded the third **by choice**, never by measurement. §8 backlog item 3. | 8 |
+| `SMALL` | **The Smallcap 100 arm — declared 2 Sep 2026 before it was run.** Today's Nifty Smallcap 100 added to the universe; nothing else changes. | Guidelines §2 permits all three indices; PROJECT.md §6 excluded the third **by choice**, never by measurement. §8 backlog item 3. | 8 |
 
 This requires `backtest.py` to be **weighting-agnostic as well as signal-agnostic** — if a
 variant doesn't run through the identical engine, its PNL isn't comparable to V0's and the
@@ -1140,7 +1140,7 @@ rationalisation.
 
 ```
 config.yaml            every parameter. no number lives anywhere else
-CLAUDE.md              this file
+PROJECT.md              this file
 DECISIONS.md           the decision ledger — authoritative
 NOTES.md               analysis notebook — mechanism reasoning, raw material for the report
 PLAN.md                the V1 build plan — phases, and the decision queue behind each

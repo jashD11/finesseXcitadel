@@ -3,7 +3,7 @@
 Add Nifty Smallcap 100 to the universe snapshot (A19, the `SMALL` arm).
 
 The guidelines permit Nifty 100, Nifty Midcap 100 **and** Nifty Smallcap 100. This
-project excluded the third by choice (CLAUDE.md §6); A19 tests that choice instead of
+project excluded the third by choice (docs/PROJECT.md §6); A19 tests that choice instead of
 asserting it. The script takes the existing 283-name snapshot, adds today's Smallcap 100
 list and the prices of every name it introduces, and writes a new dated snapshot. The
 old one is never touched -- A14 makes snapshots immutable.
@@ -11,7 +11,7 @@ old one is never touched -- A14 makes snapshots immutable.
     python3 scripts/11_smallcap_universe.py --as-of 2026-09-02
 
 Network step, like 01_fetch and 08_pit_universe. The price pull is cached to its own raw
-file, so re-running makes no network calls (CLAUDE.md §2).
+file, so re-running makes no network calls (docs/PROJECT.md §2).
 
 Two things this deliberately does **not** do:
 
@@ -21,7 +21,7 @@ Two things this deliberately does **not** do:
   refuses to run `point_in_time` against it rather than quietly treating every name as a
   member forever.
 - It does not widen the corporate-action or liquidity treatment. Both are checked after
-  the panel is built, and anything they surface is a decision (CLAUDE.md §2), not
+  the panel is built, and anything they surface is a decision (docs/PROJECT.md §2), not
   something this script resolves on its own.
 """
 
@@ -127,7 +127,7 @@ def main() -> int:
     # forward-fill cap cannot be filled without inventing prices, and a stale price fed
     # into a 252-day momentum window is a fabricated signal, not a missing one. A name
     # that fails this is excluded and disclosed, exactly as the six unpriceable
-    # historical members are (CLAUDE.md §10) -- the alternative, raising the cap, would
+    # historical members are (docs/PROJECT.md §10) -- the alternative, raising the cap, would
     # silently weaken a rule that has already caught real defects.
     #
     # This checks the names being *added*. The base snapshot was validated when it was

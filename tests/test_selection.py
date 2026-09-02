@@ -167,7 +167,7 @@ def test_weight_vectors_normalise_and_cover_every_feature(cfg):
 
     # C9-r's isolation vectors: momentum held at exactly 1/2 while the spare half moves
     # from being SPLIT across both features to being spent entirely on one. That is the
-    # designed comparison in CLAUDE.md §11 `WGT`, so it is pinned rather than assumed.
+    # designed comparison in docs/PROJECT.md §11 `WGT`, so it is pinned rather than assumed.
     for vector, dropped in (("no_ddown", "drawdown_252"), ("no_idisc", "info_discreteness")):
         cfg._flat["composite.active_weights"] = vector
         w = weights(cfg)

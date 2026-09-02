@@ -98,12 +98,19 @@ def fetch_universe(cfg: Config) -> pd.DataFrame:
     uni = pd.concat(frames, ignore_index=True)
     uni["yahoo_symbol"] = uni["symbol"] + cfg["universe.yahoo_suffix"]
 
-    total = cfg["universe.expected_total"]
+    # The expectation is *what this function fetched* -- one row per name per list -- and
+    # not `universe.expected_total`, which counts the names in the built **panel** and
+    # therefore includes the 83 historical members `08_pit_universe.py` adds later. Those
+    # two numbers were the same until 2026-08-28, when the point-in-time rebuild moved
+    # expected_total 200 -> 283 and silently broke a cold `01_fetch.py` for anyone who had
+    # no cached snapshot. Nothing caught it because the snapshot is immutable (A14), so
+    # this line had not run since. Derived from the lists, so it cannot drift again.
+    total = per_list * len(frames)
     assert len(uni) == total, f"expected {total} rows, got {len(uni)}"
-    # A4 verified the two lists are disjoint. Asserted rather than trusted, because a
-    # future index reshuffle could overlap them and silently shrink the universe.
-    assert uni["symbol"].nunique() == total, "duplicate symbols across the two lists"
-    assert uni["isin"].nunique() == total, "duplicate ISINs across the two lists"
+    # A4 verified the lists are disjoint. Asserted rather than trusted, because a future
+    # index reshuffle could overlap them and silently shrink the universe.
+    assert uni["symbol"].nunique() == total, "duplicate symbols across the lists"
+    assert uni["isin"].nunique() == total, "duplicate ISINs across the lists"
     return uni.sort_values("symbol").reset_index(drop=True)
 
 

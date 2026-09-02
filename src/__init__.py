@@ -1,1 +1,1 @@
-"""Finesse x Citadel Portfolio Challenge — see CLAUDE.md."""
+"""Finesse x Citadel Portfolio Challenge — see docs/PROJECT.md."""

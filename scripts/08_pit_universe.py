@@ -10,7 +10,7 @@ A14 makes snapshots immutable, so this creates a new stamp rather than editing o
     python3 scripts/08_pit_universe.py --as-of 2026-08-28
 
 Network step, like 01_fetch. The historical price pull is cached to its own raw file, so
-re-running makes no network calls (CLAUDE.md §2).
+re-running makes no network calls (docs/PROJECT.md §2).
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ BASE_AS_OF = "2026-08-24"
 #: Three (GSPL, GUJGASLTD, SONACOMS-class names) are still listed, so this is a gap in the
 #: data source and not a delisting -- which is why it is stated rather than rationalised.
 UNPRICEABLE_NOTE = ("no usable Yahoo series; excluded from the tradeable universe and "
-                    "disclosed (CLAUDE.md §10)")
+                    "disclosed (docs/PROJECT.md §10)")
 
 
 def historical_symbols(cfg, universe: pd.DataFrame, as_of: dt.date,

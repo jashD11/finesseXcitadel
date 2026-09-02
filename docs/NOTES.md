@@ -1,7 +1,7 @@
 # Analysis notes
 
-The running notebook (CLAUDE.md §2). Reasoning that is neither a decision (`DECISIONS.md`)
-nor a configuration (CLAUDE.md §11) lands here the same day it is thought, because the
+The running notebook (PROJECT.md §2). Reasoning that is neither a decision (`DECISIONS.md`)
+nor a configuration (PROJECT.md §11) lands here the same day it is thought, because the
 report is assembled from it and reconstructed reasoning is worse reasoning.
 
 Each entry says plainly which parts are measured and which are speculation, and names the
@@ -347,7 +347,7 @@ overstated. Recorded so the report can say plainly which bar was used and why.
 
 ## N6 · V1 failed, and the failure is monotone in the momentum weight — 2026-08-30
 
-**All measured.** Five pre-registered arms (`CLAUDE.md` §11), every one scored against a
+**All measured.** Five pre-registered arms (`PROJECT.md` §11), every one scored against a
 noise band drawn before the arms were conceived. Every one lost, by −3.47σ to −5.22σ.
 
 ### The single most informative number in the phase
@@ -841,7 +841,7 @@ power had never been measured at all.
 ## N10 · The weight surface, and the limit it put on N7's mechanism — 2026-08-30
 
 `WGT`: 7 weight vectors × 3 cadences × 2 weighting rules = 42 cells, pre-registered as one
-set (`DECISIONS.md` C9-r, `CLAUDE.md` §11) with six predictions written before any ran. Full
+set (`DECISIONS.md` C9-r, `PROJECT.md` §11) with six predictions written before any ran. Full
 results and prediction scoring are in §11; this entry carries the mechanism.
 
 ### The headline is a non-result, and it is a clean one
@@ -1042,7 +1042,7 @@ searching, not testing.
 **§8 backlog items 4 and, by implication, 5 are answerable from the measurements above**
 rather than from runs: there is no within-book return gradient for conviction weighting to
 exploit (§1), and a sector cap — like any constraint that displaces names — pays the cliff
-(§2) while reducing a variance the metric rewards (§3 of `CLAUDE.md`).
+(§2) while reducing a variance the metric rewards (§3 of `PROJECT.md`).
 
 **The one arm with a defensible mechanism is inverse-vol weighting**, and it is defensible
 for Sharpe, not for PNL. It requires an engine change: `backtest._target_shares` hardcodes

@@ -2,9 +2,9 @@
 """
 Phase 4: V1 -- the composite signal, and the pre-registered arms around it.
 
-The feature set is `DECISIONS.md` C10 (12-1 momentum, information discreteness negated,
+The feature set is `docs/DECISIONS.md` C10 (12-1 momentum, information discreteness negated,
 drawdown from the 252-day peak) and the combination rule is C17 (scaled ranks, C9 weights).
-The five arms and six predictions were written into `CLAUDE.md` §11 **before this script was
+The five arms and six predictions were written into `docs/PROJECT.md` §11 **before this script was
 first run**, which is what makes any result here a finding rather than a search.
 
 Everything runs through `03_v0.py`'s helpers and `backtest.run` -- the identical engine V0,
@@ -41,7 +41,7 @@ from src.config import load  # noqa: E402
 v0 = import_module("03_v0")
 AS_OF = v0.AS_OF
 
-# The pre-registered slate (CLAUDE.md §11). `signal` picks which score is ranked; the other
+# The pre-registered slate (docs/PROJECT.md §11). `signal` picks which score is ranked; the other
 # two fields are config overrides. Declared as data so the ledger, the CLI and the code
 # cannot disagree about what an arm is.
 ARMS: dict[str, dict] = {
@@ -49,7 +49,7 @@ ARMS: dict[str, dict] = {
     "buffer":  {"signal": "composite", "buffer": True,  "weights": "base"},
     "tilt":    {"signal": "composite", "buffer": False, "weights": "tilt"},
     "rm-solo": {"signal": "resid_mom", "buffer": False, "weights": "base"},
-    # C9-r / CLAUDE.md §11 `WGT`: the pre-registered weight surface. Three ladder rungs
+    # C9-r / docs/PROJECT.md §11 `WGT`: the pre-registered weight surface. Three ladder rungs
     # above `tilt`, and two isolation arms that hold momentum at exactly 1/2 while spending
     # the spare half on one feature instead of splitting it across both.
     "w3":      {"signal": "composite", "buffer": False, "weights": "w3"},

@@ -1,7 +1,7 @@
 """
 Cleaning and panel construction: raw snapshot -> validated panel + quality report.
 
-Every rule here is frozen in DECISIONS.md (A7-A13, A16) and parameterised in
+Every rule here is frozen in docs/DECISIONS.md (A7-A13, A16) and parameterised in
 config.yaml. Nothing in this module chooses a threshold on its own.
 
 The ordering matters. Corporate actions are corrected *before* anything is flagged,
@@ -206,7 +206,7 @@ def apply_membership_mode(cfg: Config, panel: Panel, universe: pd.DataFrame) -> 
     Under `current_constituents` every name on today's two lists is a member on every
     date, and the 83 historical-only names are members on none. That is exactly the
     pre-A17 universe: a stock is eligible in 2021 partly because it had risen enough to
-    join an index by 2026. The organisers now mandate it; CLAUDE.md §10 measures what it
+    join an index by 2026. The organisers now mandate it; docs/PROJECT.md §10 measures what it
     is worth rather than pretending it is not there.
     """
     mode = cfg["universe.membership_mode"]
@@ -248,7 +248,7 @@ def load_panel(cfg: Config, panel_file: Path, universe_file: Path) -> Panel:
     same ``universe["isin"]`` column order that `build_panel` used so the two paths
     cannot drift apart.
 
-    Takes explicit paths rather than reaching for `fetch.read_snapshot`: CLAUDE.md §12
+    Takes explicit paths rather than reaching for `fetch.read_snapshot`: docs/PROJECT.md §12
     keeps the network module out of the analysis path, and importing it here would put
     it back in transitively. The two lines of provenance-metadata reading are duplicated
     from `fetch.read_snapshot` for that reason.
@@ -471,7 +471,7 @@ only when `applied` is true.
 
 This route exists because A8's rule is stated as *at least one* name trading, and a
 stale bar can clear that bar with two. The threshold was not loosened into a
-participation fraction — see `DECISIONS.md` A8. **The cost of that choice, stated
+participation fraction — see `docs/DECISIONS.md` A8. **The cost of that choice, stated
 plainly: the next such bar is caught only if someone looks.** `A11` below (10+ identical
 closes) is the tripwire most likely to catch one.
 

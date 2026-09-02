@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Phase 3: the noise band (CLAUDE.md §5).
+Phase 3: the noise band (docs/PROJECT.md §5).
 
 10,000 random 10-stock portfolios over the same window, the same rebalance calendar, the
 same costs, the same engine. Only the choice of names differs, so the spread of outcomes
@@ -27,14 +27,18 @@ from src.config import load  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from importlib import import_module  # noqa: E402
 
-AS_OF = "2026-08-28"
+# The snapshot every analysis script reads. Sourced from config rather than repeated
+# here: the same date lived in four files until 2026-09-02, and a *different* duplicated
+# universe count is exactly what silently broke a cold `01_fetch.py` (see src/fetch.py).
+# config.yaml is the single source of every value in this repo, dates included.
+AS_OF = str(load()["universe.snapshot"])
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--window", choices=("main", "stress"), default="main")
     ap.add_argument("--calendar", default=None,
-                    help="override execution.rebalance_calendar (FREQ grid, CLAUDE.md §11)")
+                    help="override execution.rebalance_calendar (FREQ grid, docs/PROJECT.md §11)")
     ap.add_argument("--weighting", default=None, choices=("reset", "drift"),
                     help="override weighting.reset_to_target (B3)")
     ap.add_argument("--lookback", type=int, default=None,

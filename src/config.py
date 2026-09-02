@@ -29,7 +29,7 @@ from src.decisions import ConfigError, UnresolvedDecision
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG = REPO_ROOT / "config.yaml"
 
-# ── Pending decisions: dotted key -> decision ID in DECISIONS.md ──────────────
+# ── Pending decisions: dotted key -> decision ID in docs/DECISIONS.md ──────────────
 # Empty since 2026-08-30: Phase 2 closed the last five (C3, C4, C5, C8, C9). Kept, and
 # still enforced, because the machinery is what makes a *future* open decision fail loudly
 # instead of running on a default — and because `cfg.pending()` returning {} is a claim the
@@ -147,7 +147,7 @@ class Config:
             if key in PENDING:
                 raise UnresolvedDecision(
                     f"{key!r} is blocked on decision {PENDING[key]}. "
-                    f"Resolve it, record it in DECISIONS.md, then set it in config.yaml."
+                    f"Resolve it, record it in docs/DECISIONS.md, then set it in config.yaml."
                 )
             raise ConfigError(f"{key!r} is null: {NULLABLE.get(key, 'no reason declared')}")
         return value
@@ -199,7 +199,7 @@ def load(path: str | Path = DEFAULT_CONFIG) -> Config:
         raise ConfigError(
             f"these keys are declared PENDING but have values: {silently_resolved}. "
             f"A decision cannot be resolved in config.yaml alone — record it in "
-            f"DECISIONS.md and remove it from PENDING in src/config.py."
+            f"docs/DECISIONS.md and remove it from PENDING in src/config.py."
         )
 
     return Config(flat, path)

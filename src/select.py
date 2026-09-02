@@ -1,7 +1,7 @@
 """
 Ranking, the rank buffer, and the tie-break.
 
-V0 takes the plain top 10 with no buffer; the buffer arrives with V1 (CLAUDE.md §6).
+V0 takes the plain top 10 with no buffer; the buffer arrives with V1 (docs/PROJECT.md §6).
 Both paths land here so selection logic lives in exactly one place.
 
 C7 (frozen) is the tie-break: incumbent first, then ISIN ascending. Exact ties on

@@ -1,7 +1,7 @@
 # Report numbers — generated, never typed
 
 Every figure below is read from `output/sweep/monthly_reset/`. Regenerate with
-`python3 scripts/06_report.py`. Nothing here is hand-entered (CLAUDE.md §2).
+`python3 scripts/06_report.py`. Nothing here is hand-entered (docs/PROJECT.md §2).
 
 ## 1 · Required metrics (guidelines §7)
 
@@ -30,7 +30,7 @@ Every figure below is read from `output/sweep/monthly_reset/`. Regenerate with
 | Equal-weight universe (costed) | 280.55% | ₹28,054,515 |
 | Nifty 100 index (cost-free) | 89.41% | ₹8,941,008 |
 
-## 3 · The significance band (CLAUDE.md §5)
+## 3 · The significance band (docs/PROJECT.md §5)
 
 10,000 random 10-stock portfolios, same universe, same dates, same costs, same
 engine. The only thing that differs is which names are held.
@@ -61,7 +61,7 @@ prevent.
 ## 4 · Out-of-sample stress window (guidelines §6)
 
 Fresh ₹1 crore on 2026-01-01, nothing carried over. A **one-way rejection
-filter** — no parameter was ever chosen by looking at it (CLAUDE.md §9).
+filter** — no parameter was ever chosen by looking at it (docs/PROJECT.md §9).
 
 | | H1 2026 |
 |---|---|
