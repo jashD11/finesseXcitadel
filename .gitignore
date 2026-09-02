@@ -7,8 +7,13 @@ data/clean/*.parquet
 # are the evidence behind the point-in-time universe (A17) and the only thing that makes
 # the membership reconstruction auditable by someone who did not run the fetch.
 
-# Generated artefacts
-output/
+# Generated artefacts. `output/*` rather than `output/`, because git cannot re-include a
+# file whose parent directory is excluded -- and the report pack and figures ARE committed:
+# they are the deliverable's own evidence, and an evaluator should not have to run the code
+# to see the numbers the report quotes or the charts it shows.
+output/*
+!output/report/
+!output/figures/
 __pycache__/
 *.pyc
 .pytest_cache/
