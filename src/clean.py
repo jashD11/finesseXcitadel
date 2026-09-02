@@ -302,7 +302,8 @@ def load_panel(cfg: Config, panel_file: Path, universe_file: Path) -> Panel:
     print(f"[clean] membership_mode={cfg['universe.membership_mode']} "
           f"({members} of {len(panel.isins)} names ever eligible)")
     if declared:
-        expected_members = int(cfg["universe.expected_members"])
+        mode = cfg["universe.membership_mode"]
+        expected_members = int(cfg[f"universe.expected_members.{mode}"])
         assert members == expected_members, \
             f"expected {expected_members} names in the scored universe, got {members}"
     else:

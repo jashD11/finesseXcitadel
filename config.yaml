@@ -56,12 +56,16 @@ universe:
   # panel they were written for and reported, not silently asserted, against any other.
   snapshot: 2026-08-28
   expected_total: 283        # A4 verified: the two current lists are disjoint
-  # A3-r — names the scored universe admits once `membership_mode` has been applied. 200
-  # under `current_constituents` (today's two lists), 283 under `point_in_time` (those
-  # plus every priced in-window member). Asserted at load, because a mislabelled
-  # `index_name` would shrink the universe silently and every number would still look
-  # plausible. Moves to 300/383 on the Smallcap snapshot (A19).
-  expected_members: 200
+  # A3-r — names the scored universe admits, one entry per membership mode. Asserted at
+  # load, because a mislabelled `index_name` would shrink the universe silently and every
+  # number would still look plausible.
+  #
+  # Declared per mode rather than as one number so that `membership_mode` really is a
+  # **one-word switch**: flipping it must not require a second edit here, or the claim that
+  # both universes run from one commit stops being true in practice.
+  expected_members:
+    current_constituents: 200   # today's Nifty 100 + Midcap 100
+    point_in_time: 283          # those, plus every priced in-window member (A17)
   yahoo_suffix: .NS
   identity_key: isin         # A7 FROZEN — ISIN internally; ticker for display/fetch
   # A3 AMENDED 2026-08-28 / A17 — membership is point-in-time, rebuilt from NSE index
