@@ -4,6 +4,10 @@ A systematic, long-only equity strategy: **at most 10 stocks from the Nifty 100 
 Midcap 100**, backtested **1 Jan 2021 – 31 Dec 2025** on **₹1 crore** with **0.1%
 transaction costs**, and stress-tested on **1 Jan – 30 Jun 2026**.
 
+The rules permit a third index, **Nifty Smallcap 100**. We tested it and left it out — it
+**loses ₹4.39 crore** at the submitted cadence. That is a measured result, not an omission:
+see [§5](#5--how-the-configuration-was-chosen) and `docs/DECISIONS.md` A19.
+
 - **How the project was explored, and every configuration tried:** [`WALKTHROUGH.md`](WALKTHROUGH.md)
 - **Every design decision and its reasoning:** [`docs/DECISIONS.md`](docs/DECISIONS.md)
 - **The mandate, the method and the full trial ledger:** [`docs/PROJECT.md`](docs/PROJECT.md)
@@ -189,9 +193,22 @@ output/                results, figures and the report pack
 18 months are the lookback buffer the first rebalance needs. Close prices, never
 `Adj Close`; execution at the open.
 
-**Universe:** the NSE-published Nifty 100 and Nifty Midcap 100 constituent lists. Per the
-organisers' clarification, eligibility uses **today's** lists across the whole window
-(`universe.membership_mode: current_constituents`).
+**Universe:** the NSE-published Nifty 100 and Nifty Midcap 100 constituent lists — 200
+names. Per the organisers' clarification, eligibility uses **today's** lists across the whole
+window (`universe.membership_mode: current_constituents`).
+
+**Nifty Smallcap 100 is permitted by the rules and is deliberately excluded, on
+measurement.** It was added as a pre-registered arm (`scripts/11_smallcap_universe.py`,
+299 scored names, its own 10,000-draw band) and it **loses in both frames tested**:
+
+| | equal-weight benchmark | strategy PNL |
+|---|---|---|
+| Two indices (submitted) | +280.55% | ₹10,76,49,806 |
+| + Smallcap 100 | **+299.12%** | **₹6,37,38,800** |
+
+The wider universe made the *benchmark* better and the *selection rule* worse — a
+top-10-of-290 rule lets 100 high-variance candidates win the ranking on noise and displace
+better names. Full reasoning in `docs/DECISIONS.md` A19 and `docs/NOTES.md` N13.
 
 **Also in the repo:** point-in-time membership rebuilt from **27 dated NSE index-review
 press releases**, committed under `data/raw/press_releases/`. Setting

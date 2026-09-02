@@ -1259,8 +1259,8 @@ assertion in `universe.eligibility_matrix` is what surfaced it.
 
 ### Available but not adopted
 
-`/Users/jash/Desktop/Quant Research/qrtf_engine` (2.6 GB) holds an exchange-sourced
-bhavcopy panel (5.03 M rows, 2013 → **2025-06-30**, ISIN-keyed), `lifecycle.csv` with 322
+A separate local archive (2.6 GB, not part of this repository) holds an exchange-sourced
+NSE bhavcopy panel (5.03 M rows, 2013 → **2025-06-30**, ISIN-keyed), `lifecycle.csv` with 322
 delisted and 194 acquired names, 806 detected corporate actions, 3,082 daily index files
 carrying official **Nifty 100** and **NIFTY Midcap 100** closes, a point-in-time NSE-500
 membership mask, and a resumable downloader.
