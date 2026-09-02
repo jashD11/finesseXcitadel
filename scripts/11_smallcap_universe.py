@@ -63,6 +63,25 @@ def smallcap_list(cfg) -> pd.DataFrame:
     return df
 
 
+def worst_interior_gap(series: pd.Series) -> int:
+    """
+    The longest run of missing sessions *after* a name's first print, in sessions.
+
+    Leading NaNs are not a gap -- the name had simply not listed yet, which A5/C6 already
+    handles by requiring a complete lookback window. Only holes inside a live series are
+    a data defect, and a hole longer than the forward-fill cap cannot be filled without
+    inventing prices (A19).
+
+    Returns 0 for a series with no interior hole, including an all-NaN one.
+    """
+    listed = series.notna().cummax()
+    interior = series.isna() & listed
+    if not interior.any():
+        return 0
+    runs = interior.groupby((interior != interior.shift()).cumsum()).sum()
+    return int(runs.max())
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--as-of", default="2026-09-02")
@@ -138,11 +157,7 @@ def main() -> int:
     for sym in sorted(priced):
         series = (small.loc[small["yahoo_symbol"] == sym + suffix]
                        .set_index("date")["close"].reindex(days))
-        interior = series.isna() & series.notna().cummax()
-        if not interior.any():
-            continue
-        runs = interior.groupby((interior != interior.shift()).cumsum()).sum()
-        worst = int(runs.max())
+        worst = worst_interior_gap(series)
         if worst > cap:
             gapped[sym] = worst
     if gapped:

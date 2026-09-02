@@ -201,7 +201,7 @@ failed predictions.
 Python 3.12; pandas, numpy, scipy, yfinance, pyarrow, matplotlib, pytest. **No ML in the
 submitted strategy** — say so explicitly, and note the composite-signal and diagnostic work
 used scikit-learn and was rejected on measurement. One line on reproducibility: every
-parameter in `config.yaml`, every stochastic step seeded (20260824), 95 tests.
+parameter in `config.yaml`, every stochastic step seeded (20260824), 125 tests.
 
 ### §5 · Results and performance metrics (~600 words)
 

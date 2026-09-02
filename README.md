@@ -121,7 +121,7 @@ python3 scripts/04_noise.py --calendar monthly_first_trading_day --weighting res
 python3 scripts/07_sweep.py                 # the 8-cell cadence x weighting grid (~7 min)
 python3 scripts/12_signal_sweep.py          # the 6-cell lookback x skip grid  (~15 s)
 python3 scripts/03_v0.py --window stress --calendar monthly_first_trading_day --weighting reset
-python3 -m pytest tests/ -q                 # 95 pass
+python3 -m pytest tests/ -q                 # 125 pass
 ```
 
 **A note on exactness.** Yahoo Finance silently revises history, so a snapshot fetched today
@@ -152,39 +152,86 @@ ledger.
 
 ## 6 · Repository layout
 
+Every tracked file, and what it is for.
+
 ```
 README.md              this file
 WALKTHROUGH.md         how the project was explored, and every configuration tried
 config.yaml            every parameter. no number lives anywhere else in the repo
+.gitignore             excludes the large regenerable snapshots; keeps the report pack
+
 docs/
   PROJECT.md           the mandate, the working rules, the full trial ledger (§11)
-  DECISIONS.md         the decision register — authoritative
+  DECISIONS.md         the decision register — authoritative, 61 entries
   NOTES.md             the analysis notebook: mechanisms, anomalies, bug hunts
-  PLAN.md              the V1 composite build plan (closed — the composite lost)
-  REPORT_OUTLINE.md    structure and sourcing for the 5-6 page report
+  PLAN.md              the composite-signal build plan (closed — the composite lost)
+  REPORT_OUTLINE.md    handoff pack: report structure, and where every number lives
   guidelines.docx      the organisers' Round 2 brief
   WALKTHROUGH_point_in_time_era.md   the 28 Aug narrative, kept as written
+
 src/
   config.py            load + validate; refuses to run on an unresolved decision
+  decisions.py         the error types an unresolved or malformed decision raises
   calendar.py          trading calendar, rebalance dates, the t-1 formation lag
   fetch.py             network only. never imported by the analysis path
   clean.py             panel construction, corporate actions, membership mode
   membership.py        point-in-time index membership from NSE press releases
   universe.py          as-of eligibility: full window, tradeable, index member
-  features.py          signal computation
+  features.py          signal computation — momentum and the composite
   select.py            ranking, buffer, tie-break
   events.py            forced mid-cycle exits (index exits, unmodellable ex-dates)
   backtest.py          execution, costs, NAV, trades — signal- and weighting-agnostic
   metrics.py           round trips and every reported figure
   noise.py             the 10,000-draw significance band
-scripts/
-  01_fetch  02_clean  03_v0  04_noise  06_report  07_sweep  08_pit_universe
-  05_v1  09_feature_diagnostics  10_weight_sweep   (the rejected composite)
-  11_smallcap_universe  12_signal_sweep            (the rejected universe + signal arms)
-tests/                 config, causality, accounting, cleaning, selection — 95 tests
-data/raw/              date-stamped, immutable price and universe snapshots
-data/clean/            the validated panel
-output/                results, figures and the report pack
+
+scripts/               the pipeline, in run order
+  01_fetch             prices + constituent lists -> data/raw/          (network)
+  08_pit_universe      adds historical index members -> a new snapshot  (network)
+  02_clean             raw -> validated panel + data quality report
+  03_v0                the backtest. --calendar/--weighting/--lookback/--skip
+  04_noise             the 10,000-draw band for one configuration
+  06_report            report numbers, composition, the four figures
+  13_config_ledger     every run ever made, as one table
+                     — the sweeps
+  07_sweep             cadence x weighting, 8 cells
+  12_signal_sweep      momentum lookback x skip, 6 cells
+                     — the rejected arms, kept and runnable
+  09_feature_diagnostics   feature correlations, no PNL
+  05_v1                the composite signal, one arm per run
+  10_weight_sweep      the composite's weight surface, 42 cells
+  11_smallcap_universe adds Nifty Smallcap 100 -> a new snapshot        (network)
+
+tests/                 125 tests, no xfail
+  conftest.py          the synthetic panel fixture every test builds on
+  test_config.py       config/KNOWN agreement, no `get(key, default)`, frozen decisions
+  test_causality.py    scrambles future prices and requires the book to be unchanged
+  test_accounting.py   NAV, costs, cash and the trade-log reconciliation
+  test_clean.py        calendar, corporate actions, flags, membership mode
+  test_selection.py    ranking, tie-break, buffer, composite invariances
+  test_scripts.py      the pipeline's pure functions: run-directory decoding,
+                       the A19 data-gap rule, report formatting
+
+data/
+  corporate_actions_overrides.csv   the 5 verified actions; evidence-carrying
+  membership_overrides.csv          renames, revocations, substitutions, waivers
+  phantom_days.csv                  non-sessions the volume filter keeps
+  raw/press_releases/               27 NSE index-review PDFs — membership evidence
+  raw/universe_20260824.csv         today's Nifty 100 + Midcap 100 (200 names)
+  raw/universe_20260828.csv         those plus 83 priced historical members (283)
+  raw/universe_20260902.csv         those plus Nifty Smallcap 100 (356, A19 arm)
+  raw/membership_20260828.csv       391 point-in-time membership spans
+  raw/*.parquet                     price snapshots — NOT committed, see §4
+  clean/*.parquet                   the validated panel — NOT committed, see §4
+  reports/data_quality.md           generated panel validation report
+  reports/fetch_log_20260824.csv    per-symbol fetch provenance
+
+output/                             most artefacts regenerate; these are committed:
+  report/numbers.md                 every required metric, formatted
+  report/composition.md             portfolio composition and weights
+  report/configurations.md          all 63 runs, readable
+  report/configurations.csv         all 63 runs, machine-readable
+  figures/*.png                     the four charts
+  sweep/<cell>/, v1/<arm>/          per-run artefacts — regenerated, not committed
 ```
 
 ## 7 · Data

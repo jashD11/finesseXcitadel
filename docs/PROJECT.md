@@ -1205,7 +1205,7 @@ python3 scripts/09_feature_diagnostics.py  # Phase 0: feature correlations, no P
 python3 scripts/05_v1.py --arm base        # the composite. --arm buffer|tilt|rm-solo
                                            #   |w3|w6|w8|no-dd|no-id  (C9-r)
 python3 scripts/10_weight_sweep.py         # the WGT weight surface, 42 cells, ~78 s
-python3 -m pytest tests/ -q       # 92 pass, 0 xfail
+python3 -m pytest tests/ -q       # 125 pass, 0 xfail
 
 # add --window stress for the 2026 rejection filter; --calendar/--weighting for one cell
 ```
@@ -1296,7 +1296,7 @@ point-in-time. Everything below is on that basis.
 band, the cadence × weighting grid, B10/A18 forced mid-cycle exits, the point-in-time
 universe reconstruction (A17, now a robustness measurement rather than the scored rule),
 the V1 composite and its 42-cell weight surface, **the signal grid (C2-r) and the Smallcap
-100 arm (A19)** — and the whole search re-run on the mandated universe. **95 tests pass,
+100 arm (A19)** — and the whole search re-run on the mandated universe. **125 tests pass,
 none xfail.** Every decision is closed.
 
 ### The submission
