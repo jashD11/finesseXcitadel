@@ -54,7 +54,7 @@ universe:
   # The snapshot the two counts below describe. A19's Smallcap snapshot (2026-09-02) is a
   # different universe with different counts, so the declarations are checked against the
   # panel they were written for and reported, not silently asserted, against any other.
-  snapshot: 2026-08-28
+  snapshot: "2026-08-28"     # quoted: used as a filename fragment, not a date
   expected_total: 283        # A4 verified: the two current lists are disjoint
   # A3-r — names the scored universe admits, one entry per membership mode. Asserted at
   # load, because a mislabelled `index_name` would shrink the universe silently and every

@@ -1318,7 +1318,7 @@ to 1/10 each rebalance.** Nifty 100 + Nifty Midcap 100 as of today. Zero fitted 
 | **Risk-adjusted percentile** | **96.01st** |
 | H1 2026 rejection filter | **passes**: +7.60% vs Nifty 100 −6.65%, 88.9th pct |
 
-### Is there anything better? Sixty-two configurations say no
+### Is there anything better? Fifty-nine configurations say no
 
 The question was asked properly rather than assumed. Every axis available was swept, each
 pre-registered before it ran, each scored against a band drawn beforehand:

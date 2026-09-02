@@ -4,9 +4,10 @@
 Python file. Every number is produced by the repo and can be checked in `output/`.
 
 The short version: **we built the simplest possible momentum rule first, then spent the
-project trying to beat it, and failed.** Sixty-two configurations were evaluated. The rule
+project trying to beat it, and failed.** Fifty-nine distinct configurations were evaluated
+across 63 backtest runs. The rule
 that wins is the one we started with, rebalanced monthly instead of quarterly. This document
-is mostly about the sixty-one that lost, because that is where the evidence is.
+is mostly about the fifty-eight that lost, because that is where the evidence is.
 
 ---
 
@@ -120,6 +121,24 @@ stopped being our rule and became our *measurement of what the mandated rule con
 run from a single config word (`universe.membership_mode`), so anyone can check the 488pp in
 one edit.
 
+**Be precise about what is forward-looking here, because it is easy to state carelessly.**
+The universe list is chosen with knowledge of the future, in two separate ways:
+
+1. **Index inclusion.** A stock is in today's Nifty 100 partly *because* it rose over
+   2021–25. We are picking the top 10 momentum names from a list of companies already
+   filtered for having done well.
+2. **Survivorship.** Firms delisted, acquired, or dropped from the indices between 2021 and
+   2026 are absent from today's lists entirely. The strategy is never offered them, so it can
+   never be caught holding one on the way down.
+
+**The strategy itself has no look-ahead.** The signal uses data strictly through t−1 and
+fills at the next open, and a test scrambles every price from the rebalance date onward and
+requires the selected book to be unchanged — then scrambles the formation window to prove
+that test is not vacuous. *All* of the forward-looking content sits in the universe
+definition the mandate specifies, and none of it is in the backtest machinery. That
+distinction is worth stating carefully, because a reader who sees "forward-looking bias" may
+otherwise assume the whole exercise is compromised.
+
 **We report the mandated number and disclose what is inside it.** A figure that large,
 computable with the code in the repo, and left unmentioned would be the most damaging
 omission available.
@@ -132,6 +151,12 @@ Each block below is a pre-registered slate. All numbers are on the **mandated un
 (today's constituents), which is what the submission is scored on.
 
 The bar to beat: **V0 quarterly, ₹8,76,46,846**, with a noise band of **σ = ₹86,16,185**.
+
+**The complete list — every one of the 63 runs with all its parameters and metrics — is in
+[`output/report/configurations.md`](output/report/configurations.md)**, generated from the
+artefacts rather than transcribed. The blocks below summarise it. Fifty-nine of the runs are
+distinct configurations; the other four deliberately repeat one through a different driver
+script, and all four reproduce the original to the rupee.
 
 ### 5a · Rebalance cadence × weighting rule — 8 cells
 
@@ -355,7 +380,42 @@ snapshots are immutable, so the code path had not run. Found in the final audit 
 
 ---
 
-## 8 · What we deliberately did not do
+## 8 · This maximises the score. It is not what you would run with real money.
+
+The mandate ranks on **Total Net PNL** — not Sharpe, not anything risk-adjusted. That single
+fact drove the design, and it should be owned rather than left for a jury to raise.
+
+**What the metric rewarded, and what we therefore built.** Volatility is rewarded under raw
+PNL, so risk reduction is a handicap. We excluded vol targeting, regime gates and beta
+hedging **in writing, before building anything**. The result holds 10 names, fully invested,
+with no stop-loss and no drawdown control, and takes a **−32.4% maximum drawdown** as a
+direct consequence. Concentration is the same trade: we measured that a median random
+10-stock book earns roughly what the equal-weight universe does, so holding 10 names buys
+*dispersion*, not expected return. In a PNL-ranked competition, wide is good. For someone's
+actual savings, wide is the problem.
+
+**What a live book would need instead:**
+
+| Concern | What we did | What a live book would do |
+|---|---|---|
+| Drawdown | Accepted −32.4% | Position limits, a drawdown circuit-breaker, or a vol target |
+| Concentration | 10 names, 1/10 each | Sector caps and a larger book |
+| Costs | 0.1% per trade, as specified | Model STT, stamp duty, exchange fees, GST and slippage separately |
+| Signal | One factor, unhedged | Diversify across factors; watch for factor crowding |
+| Regime | None — always fully invested | Momentum crashes hard on sharp reversals |
+
+**One practical objection does *not* stand, and we have the number.** Liquidity. Measured
+against each name's 20-session average daily rupee volume, **99% of the 758 executions are
+under 1.82% of that name's daily volume**, and the median is near zero — most monthly trades
+are small resets back to 1/10 rather than full entries. At ₹1 crore, market impact is
+negligible. (`output/report/numbers.md` §5.)
+
+So the honest summary: **this configuration was selected to maximise the metric the
+competition scores, on a universe the competition specifies.** Both choices inflate the
+number relative to what a live, risk-managed book would have earned. Both are stated here
+rather than left to be discovered.
+
+## 9 · What we deliberately did not do
 
 **No optimiser.** At 10 names, an estimated covariance matrix is mostly noise, and the metric
 rewards return rather than efficiency.
@@ -374,14 +434,16 @@ window the rule says decides.
 
 ---
 
-## 9 · Where to look
+## 10 · Where to look
 
 | What | Where |
 |---|---|
 | Charts | `output/figures/` |
 | Every required metric | `output/report/numbers.md` |
 | Portfolio composition and weights | `output/report/composition.md` |
-| The full trial ledger, every configuration | `docs/PROJECT.md` §11 |
+| **Every configuration tested — all 63 runs, one table** | `output/report/configurations.md` |
+| The narrative trial ledger, with predictions scored | `docs/PROJECT.md` §11 |
+| Handoff pack for whoever writes the report | `docs/REPORT_OUTLINE.md` |
 | Every design decision, including reversals | `docs/DECISIONS.md` |
 | Mechanism arguments and bug hunts | `docs/NOTES.md` |
 | How to reproduce all of it | [`README.md`](README.md) §4 |

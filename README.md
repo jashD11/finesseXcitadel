@@ -47,6 +47,8 @@ Nifty 100's −6.65%.
 |---|---|
 | **Charts and plots** | [`output/figures/`](output/figures) — `01_growth.png`, `02_noise_band.png`, `03_drawdown.png`, `04_cadence_grid.png` |
 | **All required metrics, formatted** | [`output/report/numbers.md`](output/report/numbers.md) |
+| **Every configuration tested — all 63 runs** | [`output/report/configurations.md`](output/report/configurations.md), machine-readable `.csv` alongside |
+| Liquidity: trade size vs traded volume | `output/report/numbers.md` §5 |
 | **Portfolio composition and weights** | [`output/report/composition.md`](output/report/composition.md) |
 | Submitted run's raw artefacts | `output/sweep/monthly_reset/` — `nav.csv`, `trades.csv`, `holdings.csv`, `weights.csv`, `metrics.csv`, `benchmarks.csv`, `round_trips.csv` |
 | Quarterly baseline's artefacts | `output/` (same filenames) |
@@ -128,7 +130,8 @@ on.
 ## 5 · How the configuration was chosen
 
 The submitted cell was not the first thing tried, and everything else that was tried is
-reported. **62 configurations**, each **pre-registered with its predictions before it ran**,
+reported. **63 backtest runs covering 59 distinct configurations**, each
+**pre-registered with its predictions before it ran**,
 each scored against a noise band drawn beforehand:
 
 | Axis | Cells | Result |
@@ -205,12 +208,22 @@ hand-written.
 
 Disclosed rather than hidden. Full detail in `docs/PROJECT.md` §10 and `docs/DECISIONS.md`.
 
-- **Index-inclusion bias, worth 488 percentage points.** Using today's constituents over
-  2021–25 means a stock is eligible in 2021 partly because it had risen enough to join the
-  index by 2026. The identical rule point-in-time returns **+388.0%** against **+876.5%**.
-  Flip one config word to check it. The edge survives the correction — the strategy still
-  beats 9,996 of 10,000 random books — but the headline is materially inflated by the
-  universe definition the scoring rule mandates.
+- **The universe is forward-looking, and it is worth 488 percentage points.** Using today's
+  constituents over 2021–25 means the eligible list was chosen with knowledge of the future,
+  twice over: a stock is in today's Nifty 100 partly *because* it rose over the window
+  (index inclusion), and firms delisted or dropped between 2021 and 2026 are absent
+  entirely (survivorship). The identical rule on a point-in-time universe returns
+  **+388.0%** against **+876.5%**. Flip one config word to check it. **The strategy itself
+  has no look-ahead** — the signal uses data strictly through t−1 and a test enforces it;
+  all of the forward-looking content is in the universe definition the mandate specifies.
+  The edge survives the correction (still beats 9,996 of 10,000 random books), but the
+  headline is materially inflated.
+- **It maximises the scored metric, not real-world suitability.** The mandate ranks on raw
+  PNL, so risk reduction is a handicap and we excluded it by design. A live book would want
+  position limits, sector caps, a drawdown circuit-breaker and a fuller cost model. See
+  [`WALKTHROUGH.md`](WALKTHROUGH.md) §8 for what we would change and why.
+- **Liquidity, by contrast, is not a constraint** — 99% of executions are under 1.82% of the
+  name's 20-day average daily volume. Measured, in `output/report/numbers.md` §5.
 - **Window specificity.** 2021–25 was an exceptional period for Indian mid-caps. The
   strategy is not shown to work in general, only over the mandated window.
 - **Price return only.** Dividends are excluded, understating a dividend-reinvesting book by
