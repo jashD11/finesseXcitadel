@@ -43,11 +43,25 @@ universe:
   # A3 FROZEN — today's NSE constituent lists, frozen at fetch time.
   nifty100_url: https://nsearchives.nseindia.com/content/indices/ind_nifty100list.csv
   midcap100_url: https://nsearchives.nseindia.com/content/indices/ind_niftymidcap100list.csv
+  # A19 2026-09-02 — Smallcap 100 is permitted by the guidelines and was excluded by our
+  # own choice until now. `scripts/11_smallcap_universe.py` adds it as a pre-registered
+  # arm (`SMALL`); nothing reads this URL unless that script runs.
+  smallcap100_url: https://nsearchives.nseindia.com/content/indices/ind_niftysmallcap100list.csv
   expected_per_list: 100
   # A3 AMENDED / A17 — 200 current constituents plus 83 priced historical members.
   # 6 more were members in-window but have no usable Yahoo series and are excluded and
   # disclosed (CLAUDE.md §10): DHANI, GSPL, HDFC, ISEC, MINDTREE, PEL.
+  # The snapshot the two counts below describe. A19's Smallcap snapshot (2026-09-02) is a
+  # different universe with different counts, so the declarations are checked against the
+  # panel they were written for and reported, not silently asserted, against any other.
+  snapshot: 2026-08-28
   expected_total: 283        # A4 verified: the two current lists are disjoint
+  # A3-r — names the scored universe admits once `membership_mode` has been applied. 200
+  # under `current_constituents` (today's two lists), 283 under `point_in_time` (those
+  # plus every priced in-window member). Asserted at load, because a mislabelled
+  # `index_name` would shrink the universe silently and every number would still look
+  # plausible. Moves to 300/383 on the Smallcap snapshot (A19).
+  expected_members: 200
   yahoo_suffix: .NS
   identity_key: isin         # A7 FROZEN — ISIN internally; ticker for display/fetch
   # A3 AMENDED 2026-08-28 / A17 — membership is point-in-time, rebuilt from NSE index
@@ -55,6 +69,16 @@ universe:
   # DECISIONS.md A3/A17 and src/membership.py.
   press_release_dir: data/raw/press_releases
   membership_overrides: data/membership_overrides.csv
+  # A3-r 2026-09-02 — the organisers clarified that the scored universe is the index
+  # constituents **as of today**, not as of each rebalance date. `current_constituents`
+  # is therefore the mandated mode and the one every submitted number is computed on.
+  #
+  # `point_in_time` is kept live, not deleted: it is the A17 reconstruction, and it is
+  # what makes the index-inclusion bias in CLAUDE.md §10 a measurement anyone can
+  # reproduce by flipping this one word rather than a claim they have to take on trust.
+  # Both modes read the same 283-name panel and the same 1,786-day calendar, so the two
+  # runs differ in exactly one thing: which names the eligibility gate admits.
+  membership_mode: current_constituents
 
 # ── Fetch ────────────────────────────────────────────────────────────────────
 fetch:
@@ -156,18 +180,46 @@ composite:
   reversal_sign: null        # C8 DEAD — C10 excluded the reversal feature. The ambiguity
                              # was never resolved; C8 reopens if a reversal arm is wanted.
   use_buffer: false          # D13 — arm 1 runs strict top-10; `V1-buffer` overrides.
-  # C9 FROZEN 2026-08-30. Integers, normalised at use: `base` is exactly 1/3 each and
-  # `tilt` exactly 0.5/0.25/0.25, so no floating-point weight constant exists anywhere.
-  # `tilt` is a PRE-REGISTERED ARM declared before any V1 result was seen, not a response
-  # to one — see DECISIONS.md C9. Only these two vectors are ever tried.
+  # C9 FROZEN 2026-08-30, AMENDED C9-r 2026-08-30. Integers, normalised at use: `base` is
+  # exactly 1/3 each and `tilt` exactly 0.5/0.25/0.25, so no floating-point weight constant
+  # exists anywhere. `tilt` was a PRE-REGISTERED ARM declared before any V1 result was seen.
+  #
+  # C9-r opens the weight axis (CLAUDE.md §11 `WGT`, §8 backlog item 1). C9 originally read
+  # "only these two vectors are ever tried"; judging a whole axis on two points is the
+  # single-vector bias that backlog item exists to remove. The five vectors below were
+  # declared as one pre-registered set BEFORE any of them ran.
+  #
+  # A weight of 0 expresses "drop this feature" without disturbing `composite.features` or
+  # its signs (C10 stays frozen). Weights are therefore >= 0, not > 0, and at least one must
+  # be positive — `features.weights` asserts the sum.
   active_weights: base
   weight_vectors:
-    base:
+    base:                      # w_mom 1/3 — the equal-weight composite
       mom_12_1: 1
       info_discreteness: 1
       drawdown_252: 1
-    tilt:
+    tilt:                      # w_mom 1/2 — spare half SPLIT across both features
       mom_12_1: 2
+      info_discreteness: 1
+      drawdown_252: 1
+    no_ddown:                  # w_mom 1/2 — isolation: drops drawdown, keeps ID
+      mom_12_1: 1
+      info_discreteness: 1
+      drawdown_252: 0
+    no_idisc:                  # w_mom 1/2 — isolation: drops ID, keeps drawdown
+      mom_12_1: 1
+      info_discreteness: 0
+      drawdown_252: 1
+    w3:                        # w_mom 0.60 — ladder
+      mom_12_1: 3
+      info_discreteness: 1
+      drawdown_252: 1
+    w6:                        # w_mom 0.75 — ladder
+      mom_12_1: 6
+      info_discreteness: 1
+      drawdown_252: 1
+    w8:                        # w_mom 0.80 — ladder ceiling (N9's steep region)
+      mom_12_1: 8
       info_discreteness: 1
       drawdown_252: 1
   buffer_enter_rank: 10      # CLAUDE.md §6

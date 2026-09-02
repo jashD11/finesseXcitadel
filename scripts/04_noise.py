@@ -37,16 +37,25 @@ def main() -> int:
                     help="override execution.rebalance_calendar (FREQ grid, CLAUDE.md §11)")
     ap.add_argument("--weighting", default=None, choices=("reset", "drift"),
                     help="override weighting.reset_to_target (B3)")
+    ap.add_argument("--lookback", type=int, default=None,
+                    help="override signal.lookback (SIG grid, C2)")
+    ap.add_argument("--skip", type=int, default=None,
+                    help="override signal.skip (SIG grid, C2)")
+    ap.add_argument("--out-tag", default="",
+                    help="prefix the output directory (see 03_v0.apply_overrides)")
+    ap.add_argument("--as-of", default=AS_OF,
+                    help=f"snapshot to draw the band from (default {AS_OF})")
     args = ap.parse_args()
     tag = "" if args.window == "main" else "_stress"
 
     cfg = load()
     v0_module = import_module("03_v0")
-    label = v0_module.apply_overrides(cfg, args.calendar, args.weighting)
+    label = v0_module.apply_overrides(cfg, args.calendar, args.weighting,
+                                      args.lookback, args.skip, args.out_tag)
     start_key, end_key = v0_module.WINDOWS[args.window]
 
-    panel = clean.load_panel(cfg, clean.panel_path(cfg, AS_OF),
-                             clean.universe_path(cfg, AS_OF))
+    panel = clean.load_panel(cfg, clean.panel_path(cfg, args.as_of),
+                             clean.universe_path(cfg, args.as_of))
     capital = float(cfg["mandate.capital"])
     start, end = pd.Timestamp(cfg[start_key]), pd.Timestamp(cfg[end_key])
     print(f"[noise] window '{args.window}': {start.date()} -> {end.date()}")

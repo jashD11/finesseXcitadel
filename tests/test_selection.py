@@ -151,18 +151,38 @@ def test_weight_vectors_normalise_and_cover_every_feature(cfg):
     floating-point constant written anywhere. Checks every declared vector, not just the
     active one, so the tilt arm cannot rot while unused.
     """
-    from src.features import signs, weights
+    from src.features import signs, weight_vector_names, weights
 
-    for vector in ("base", "tilt"):
+    for vector in weight_vector_names(cfg):
         cfg._flat["composite.active_weights"] = vector
         w = weights(cfg)
         assert set(w) == set(cfg["composite.features"]), f"{vector} misses a feature"
         assert abs(sum(w.values()) - 1.0) < 1e-12, f"{vector} does not sum to 1"
+        assert all(v >= 0 for v in w.values()), f"{vector} has a negative weight"
     cfg._flat["composite.active_weights"] = "base"
 
     assert weights(cfg) == {f: 1 / 3 for f in cfg["composite.features"]}
     cfg._flat["composite.active_weights"] = "tilt"
     assert weights(cfg)["mom_12_1"] == 0.5
+
+    # C9-r's isolation vectors: momentum held at exactly 1/2 while the spare half moves
+    # from being SPLIT across both features to being spent entirely on one. That is the
+    # designed comparison in CLAUDE.md §11 `WGT`, so it is pinned rather than assumed.
+    for vector, dropped in (("no_ddown", "drawdown_252"), ("no_idisc", "info_discreteness")):
+        cfg._flat["composite.active_weights"] = vector
+        w = weights(cfg)
+        assert w["mom_12_1"] == 0.5, f"{vector} must hold momentum at 1/2"
+        assert w[dropped] == 0.0, f"{vector} must zero {dropped}"
+        assert sum(v for k, v in w.items() if k != "mom_12_1") == 0.5
+
+    # The ladder is strictly increasing in momentum weight, which is what makes
+    # prediction 1 a monotonicity claim rather than a set of unrelated cells.
+    ladder = []
+    for vector in ("base", "tilt", "w3", "w6", "w8"):
+        cfg._flat["composite.active_weights"] = vector
+        ladder.append(weights(cfg)["mom_12_1"])
+    assert ladder == sorted(ladder) and len(set(ladder)) == len(ladder), \
+        f"the WGT ladder is not strictly increasing in momentum weight: {ladder}"
     cfg._flat["composite.active_weights"] = "base"
 
     # Every feature must carry a sign; src/config.py declares one key each so that a new

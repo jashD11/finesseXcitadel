@@ -75,10 +75,16 @@ def test_every_composite_feature_has_a_sign_and_a_weight():
     declares one KNOWN key per sign for this reason; this asserts the two stay in step.
     """
     cfg = load()
+    from src.features import weight_vector_names
+
+    vectors = weight_vector_names(cfg)
+    assert {"base", "tilt"} <= set(vectors), "the two C9 vectors must survive C9-r"
     for feature in cfg["composite.features"]:
         assert cfg[f"composite.feature_signs.{feature}"] in (1, -1)
-        for vector in ("base", "tilt"):
-            assert cfg[f"composite.weight_vectors.{vector}.{feature}"] > 0
+        for vector in vectors:
+            # C9-r: >= 0, not > 0. Zero is how the isolation vectors drop a feature without
+            # touching the frozen feature set; negative is refused in `features.weights`.
+            assert cfg[f"composite.weight_vectors.{vector}.{feature}"] >= 0
 
 
 def test_unknown_key_raises(tmp_path):

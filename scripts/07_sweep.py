@@ -30,9 +30,15 @@ CADENCES = ["quarterly_first_trading_day", "monthly_first_trading_day",
 WEIGHTINGS = ["reset", "drift"]
 
 # D11-r: the fixed ruler. Every arm's z_qtr divides by this, so the column may be read
-# down the table. Sourced from the NOISE-r1 ledger row, not recomputed, because a ruler
-# that moves is not a ruler.
-SIGMA_QUARTERLY = 5_092_127
+# down the table. Sourced from a ledger row, not recomputed, because a ruler that moves
+# is not a ruler.
+#
+# A3-r 2026-09-02: the mandated universe is today's constituents, so the ruler is the
+# `MAND-NOISE` row — 10,000 draws on the 200-name universe with B10's forced exits active.
+# The point-in-time ruler was 5_092_127 and the pre-B10 today's-constituents one was
+# 8_605_419; neither is comparable to this, which is why the ledger keeps them in
+# separate blocks rather than in one column.
+SIGMA_QUARTERLY = 8_616_185
 
 
 def label_of(cadence: str, weighting: str) -> str:

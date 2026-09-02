@@ -12,7 +12,7 @@ gaps it does not have.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as np
@@ -184,6 +184,46 @@ def build_panel(cfg: Config, prices: pd.DataFrame, universe: pd.DataFrame,
     return Panel(symbols=symbols, member=member, **frames, **blank)
 
 
+#: A3-r. `point_in_time` reads the A17 reconstruction persisted in the panel;
+#: `current_constituents` overwrites it with today's published lists, held flat over the
+#: whole window. Anything else is a typo and must not silently become one of these.
+MEMBERSHIP_MODES = ("point_in_time", "current_constituents")
+
+#: The `index_name` value `08_pit_universe.py` writes for a name that was a constituent
+#: in-window but is not on today's lists. It is the whole difference between the two modes.
+HISTORICAL_ONLY = "HISTORICAL"
+
+
+def apply_membership_mode(cfg: Config, panel: Panel, universe: pd.DataFrame) -> Panel:
+    """
+    A3-r: resolve which membership rule the eligibility gate sees.
+
+    The panel on disk always carries the point-in-time mask (A17), because that is the
+    expensive thing to reconstruct and it is stamped into an immutable snapshot (A14).
+    The *scored* rule is a config word, applied at load time, so both universes run from
+    one commit and one panel.
+
+    Under `current_constituents` every name on today's two lists is a member on every
+    date, and the 83 historical-only names are members on none. That is exactly the
+    pre-A17 universe: a stock is eligible in 2021 partly because it had risen enough to
+    join an index by 2026. The organisers now mandate it; CLAUDE.md §10 measures what it
+    is worth rather than pretending it is not there.
+    """
+    mode = cfg["universe.membership_mode"]
+    if mode not in MEMBERSHIP_MODES:
+        raise ConfigError(f"A3-r allows {list(MEMBERSHIP_MODES)}; got {mode!r}")
+    if mode == "point_in_time":
+        return panel
+
+    current = (universe.set_index("isin")["index_name"] != HISTORICAL_ONLY)
+    current = current.reindex(panel.isins)
+    assert current.notna().all(), "universe file does not name every panel column"
+    member = pd.DataFrame(
+        np.broadcast_to(current.to_numpy(), (len(panel.dates), len(panel.isins))),
+        index=panel.dates, columns=panel.isins)
+    return replace(panel, member=member)
+
+
 def panel_path(cfg: Config, as_of: str) -> Path:
     """Where `scripts/02_clean.py` persists the panel for a given snapshot date."""
     return cfg.resolved_path("paths.data_clean") / f"panel_{as_of.replace('-', '')}.parquet"
@@ -237,8 +277,13 @@ def load_panel(cfg: Config, panel_file: Path, universe_file: Path) -> Panel:
     panel = Panel(symbols=universe.set_index("isin")["symbol"], **frames, **flags)
 
     assert panel.close.index.is_monotonic_increasing and panel.close.index.is_unique
-    assert len(panel.isins) == int(cfg["universe.expected_total"]), \
-        f"expected {cfg['universe.expected_total']} names, got {len(panel.isins)}"
+    # The declared counts describe one snapshot (`universe.snapshot`). A19's Smallcap
+    # universe is a different one, so its counts are *reported* rather than asserted --
+    # a declaration checked against the wrong snapshot is worse than no declaration.
+    declared = str(cfg["universe.snapshot"]) == str(meta["as_of"])
+    if declared:
+        assert len(panel.isins) == int(cfg["universe.expected_total"]), \
+            f"expected {cfg['universe.expected_total']} names, got {len(panel.isins)}"
     if "n_days" in meta:
         assert len(panel.dates) == int(meta["n_days"]), \
             f"panel has {len(panel.dates)} days, snapshot metadata says {meta['n_days']}"
@@ -248,6 +293,21 @@ def load_panel(cfg: Config, panel_file: Path, universe_file: Path) -> Panel:
     listed = panel.close.notna().cummax()
     interior = int((panel.close.isna() & listed).sum().sum())
     assert interior == 0, f"{interior} interior NaN closes in the panel"
+
+    # A3-r: the scored membership rule is resolved here, at the one place every script
+    # loads a panel through, and announced. A universe swapped silently is the change
+    # most able to move every number in the project without leaving a trace.
+    panel = apply_membership_mode(cfg, panel, universe)
+    members = int(panel.member.any(axis=0).sum())
+    print(f"[clean] membership_mode={cfg['universe.membership_mode']} "
+          f"({members} of {len(panel.isins)} names ever eligible)")
+    if declared:
+        expected_members = int(cfg["universe.expected_members"])
+        assert members == expected_members, \
+            f"expected {expected_members} names in the scored universe, got {members}"
+    else:
+        print(f"[clean] snapshot {meta['as_of']} is not the declared "
+              f"{cfg['universe.snapshot']}; counts reported, not asserted")
 
     return panel
 

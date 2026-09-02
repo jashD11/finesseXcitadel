@@ -49,6 +49,14 @@ ARMS: dict[str, dict] = {
     "buffer":  {"signal": "composite", "buffer": True,  "weights": "base"},
     "tilt":    {"signal": "composite", "buffer": False, "weights": "tilt"},
     "rm-solo": {"signal": "resid_mom", "buffer": False, "weights": "base"},
+    # C9-r / CLAUDE.md §11 `WGT`: the pre-registered weight surface. Three ladder rungs
+    # above `tilt`, and two isolation arms that hold momentum at exactly 1/2 while spending
+    # the spare half on one feature instead of splitting it across both.
+    "w3":      {"signal": "composite", "buffer": False, "weights": "w3"},
+    "w6":      {"signal": "composite", "buffer": False, "weights": "w6"},
+    "w8":      {"signal": "composite", "buffer": False, "weights": "w8"},
+    "no-dd":   {"signal": "composite", "buffer": False, "weights": "no_ddown"},
+    "no-id":   {"signal": "composite", "buffer": False, "weights": "no_idisc"},
 }
 
 

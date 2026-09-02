@@ -232,9 +232,34 @@ def weights(cfg: Config) -> dict[str, float]:
     active = cfg["composite.active_weights"]
     raw = {f: float(cfg[f"composite.weight_vectors.{active}.{f}"])
            for f in cfg["composite.features"]}
+    # C9-r admits a weight of **zero**, which is how the `no_ddown` / `no_idisc` isolation
+    # vectors drop a feature without disturbing `composite.features` or its signs (C10 stays
+    # frozen). Negative weights are refused: a negative weight silently inverts a feature and
+    # would duplicate, and could contradict, the sign declared in `composite.feature_signs`.
+    bad = {f: w for f, w in raw.items() if w < 0}
+    assert not bad, f"negative weights in {active!r}: {bad}; invert via feature_signs instead"
     total = sum(raw.values())
     assert total > 0, f"weight vector {active!r} sums to {total}"
     return {f: w / total for f, w in raw.items()}
+
+
+def weight_vector_names(cfg: Config) -> list[str]:
+    """
+    Every weight vector declared in `config.yaml`, in declaration order.
+
+    Derived from the config rather than listed here, so the `WGT` sweep, the tests and the
+    YAML cannot disagree about which vectors exist — the §2 consistency rule applied to a
+    set of names rather than to a number.
+    """
+    prefix = "composite.weight_vectors."
+    names: list[str] = []
+    for key in cfg._flat:
+        if key.startswith(prefix):
+            name = key[len(prefix):].split(".", 1)[0]
+            if name not in names:
+                names.append(name)
+    assert names, "no weight vectors declared"
+    return names
 
 
 def signs(cfg: Config) -> dict[str, int]:

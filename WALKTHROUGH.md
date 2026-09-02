@@ -4,23 +4,34 @@
 Every number below is produced by the repo and can be checked in the CSVs in `output/`,
 which open in Excel.
 
-Status as of **28 Aug 2026**: the strategy work is done and tested. The written report is
-not yet started.
+> ## Read this first — the universe rule changed on 2 September 2026
+>
+> The organisers confirmed that the scored universe is the index constituents **as of
+> today**, not as of each rebalance date. That reverses the single biggest decision this
+> document describes, so the numbers below are **no longer the submitted ones**.
+>
+> | | This document (point-in-time) | **The submission** (mandated) |
+> |---|---|---|
+> | Configuration | weekly rebalance, drifting weights | **monthly rebalance, equal weight reset** |
+> | Total Net PNL | ₹4,85,51,143 (+485.5%) | **₹10,76,49,806 (+1,076.5%)** |
+> | Sharpe / MDD | 1.64 / −30.6% | **2.42 / −32.4%** |
+> | Beats random 10-stock books | 9,996 of 10,000 | **10,000 of 10,000** |
+>
+> **Nothing in this document is withdrawn**, and section 4a in particular is more important
+> than ever: it measures what the mandated universe is worth, which is **488 percentage
+> points**. That is now our largest disclosed limitation rather than a bug we fixed, and the
+> repo still runs both universes from a single config word so anyone can check it.
+>
+> Three things reversed *again* with the universe: the best rebalancing frequency went back
+> to **monthly**, resetting weights beat letting them drift **again**, and the strategy's
+> risk-adjusted standing improved a great deal — it now sits at the **96th percentile** per
+> unit of risk, against 63rd for the quarterly baseline. `NOTES.md` N12 records all three
+> and what they have in common.
+>
+> Current status, live numbers and the full trial ledger: **`CLAUDE.md` §15 and §11**.
 
-**One thing changed on 28 Aug that dwarfs everything else in this document, and a reader of
-any earlier version needs to know it.** We had been picking stocks from *today's* index
-membership, applied backwards to 2021 — which quietly hands the strategy a list of
-companies partly chosen for having already gone up. We rebuilt the universe properly, from
-NSE's own dated announcements, so that on any given day the strategy may only own what was
-genuinely in the index that day.
-
-**The headline fell from +876.5% to +388.0%.** More than half of it was never real. The new
-Section 4a tells that story; it is the most important thing here.
-
-Three smaller consequences follow from it. The best rebalancing frequency changed from
-monthly to weekly. A conclusion we had published the day before — that resetting weights
-beats letting them drift — reversed completely. And, counter-intuitively, the strategy
-looks *better* once you adjust for risk than it did on the flattering universe.
+Status as of **28 Aug 2026** for everything below this line: the strategy work is done and
+tested. The written report is not yet started.
 
 ---
 

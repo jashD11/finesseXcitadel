@@ -1,8 +1,8 @@
 # Decisions
 
 Every choice where a reasonable person could have picked differently and the numbers
-would have changed. **59 decisions: 51 frozen, 1 resolved on evidence, 3 dead,
-4 non-issues, and — for the first time in this project — none open.** They appear below as
+would have changed. **59 decisions: 51 frozen (one of them amended — C9/C9-r), 1 resolved on evidence, 3 dead,
+4 non-issues, and none open.** They appear below as
 58 entries — A5 and C6 are two entries for one question, and D6/D7/D8 is one entry covering
 three.
 
@@ -89,7 +89,35 @@ like with like.
 *We must disclose in the Excel that our profit figure understates a dividend-reinvesting
 portfolio by roughly 9pp.*
 
-### A3 · Which stocks are in the universe, and as of when? `AMENDED 2026-08-28`
+### A3-r · The organisers settled it: today's constituents `AMENDED 2026-09-02`
+**The scored universe is the Nifty 100 + Nifty Midcap 100 constituents as of today, held
+flat across the whole window.** Config: `universe.membership_mode: current_constituents`.
+
+This reverses A3's 2026-08-28 amendment as the *scored* rule. It is not a finding — it is
+the organisers answering a question this project had answered for itself, and their answer
+governs. A17's reconstruction is not withdrawn and not deleted: it stays live behind
+`membership_mode: point_in_time`, one config word away, because it is now the **measurement
+of the bias the mandated rule carries** rather than the rule itself.
+
+Both universes run from one commit, one panel, one 1,786-day calendar and one engine. The
+only thing that differs is which names the eligibility gate admits, which is exactly what
+makes the comparison below a measurement rather than a claim:
+
+| Universe | Total Net PNL | Equal-weight benchmark | Selection over its own universe |
+|---|---|---|---|
+| **Today's 200 constituents (mandated)** | **₹8,76,46,846** (+876.5%) | +284.9% | +592 pp |
+| Point-in-time membership (A17) | ₹3,88,03,708 (+388.0%) | +151.6% | +236 pp |
+
+**We report the mandated number and disclose what it contains.** CLAUDE.md §10 keeps the
+488-percentage-point measurement as a stated limitation, because a number that large,
+measurable with the code in this repo, and left unmentioned would be the single most
+damaging omission in the report.
+
+**Verification.** Flipping the flag reproduces `V0-r1` = ₹8,76,46,846 to the rupee — the
+same figure the ledger recorded on 2026-08-27, before the point-in-time work existed. The
+engine has not drifted underneath five days of universe changes.
+
+### A3 · Which stocks are in the universe, and as of when? `AMENDED 2026-08-28, SUPERSEDED BY A3-r`
 **Point-in-time membership: whichever stocks were actually in Nifty 100 or Nifty Midcap
 100 on the day we rebalance.** See A17 for how that was rebuilt.
 
@@ -352,6 +380,46 @@ index-deletion effect. That is a second signal riding alongside momentum, and §
 one methodology applied consistently. It is disclosed, and the alternative rule remains a
 config switch so the sensitivity can be measured rather than argued about.
 
+### A19 · Should Nifty Smallcap 100 be in the universe? `RESOLVED 2026-09-02 — no, on measurement`
+**No. Measured, pre-registered, and rejected on its own criterion — it loses money.**
+
+The guidelines permit all three indices. CLAUDE.md §6 excluded the third by *choice* and
+§8 backlog item 3 called a midcap/smallcap tilt "the largest single PNL lever". Neither was
+ever measured, so on 2026-09-02 it was: today's Smallcap 100 added to the universe
+(`scripts/11_smallcap_universe.py`), nothing else changed — same engine, same calendar
+(1,786 days, asserted unchanged), same signal, same costs, its own 10,000-draw band.
+
+| Frame | Two indices | + Smallcap 100 | Δ |
+|---|---|---|---|
+| quarterly, reset | ₹8,76,46,846 | ₹8,04,04,132 | **−₹72,42,714** |
+| **monthly, reset** (submitted) | **₹10,76,49,806** | ₹6,37,38,800 | **−₹4,39,11,006** |
+
+**The pre-registered prediction was that PNL would rise materially. It fell, in both
+frames, and by −5.1σ in the submitted one.** Recorded as a failed prediction rather than
+reworded.
+
+**And the mechanism is the interesting part, because the universe did get better.** The
+equal-weight benchmark *rises* on the wider universe, +284.9% → +307.1%: the smallcap names
+were, collectively, a good place to have money. The **selection rule** is what got worse.
+Widening a top-10-of-190 rule to top-10-of-290 adds 100 high-variance candidates, and
+12-1 momentum has no way to tell a smallcap that ran because it is compounding from one
+that ran because it is small and volatile. The extra names win the ranking on noise and
+displace better ones — the same knife-edge arithmetic `NOTES.md` N9 measured for feature
+dilution, arriving from the universe side instead.
+
+**Consequence for §8.** Backlog item 3 is now closed with a measured negative, and its
+"largest single PNL lever" rationale is retired. The lever exists; it points down.
+
+**One name is excluded and disclosed.** FORCEMOT (Force Motors) has a 41-session hole in
+Yahoo's history, 2023-12-07 → 2024-02-06 — a data-source gap, not a delisting. A9 caps
+forward-filling at 5 sessions, and filling 41 would feed a stale price into a 252-day
+momentum window, which is a fabricated signal rather than a missing one. It is dropped
+exactly as the six unpriceable historical members are (CLAUDE.md §10), so the arm ran on 299
+names. The check is general, not a special case: `11_smallcap_universe.py` refuses any
+added name whose worst interior gap exceeds `clean.ffill_max_days`, and prints what it
+dropped. The exclusion errs against the arm — Force Motors ran hard in 2024 — which is the
+right direction for a name we cannot price honestly.
+
 ### B1 · When do we rebalance? `FROZEN`
 **Quarterly — the first trading day of January, April, July and October.** 20 rebalance
 dates over the scoring window.
@@ -454,6 +522,26 @@ trimming them looked free.
 
 Recorded rather than quietly restated: a conclusion this project published for a day was
 reversed by fixing the data underneath it, not by a better argument.
+
+**Re-resolved 2026-09-02 on the mandated universe (A3-r) — reset, again.** The grid was
+re-run on today's constituents with B10's exits active, and **reset wins at all four
+cadences**, restoring the 2026-08-27 verdict:
+
+| cadence | reset − drift |
+|---|---|
+| quarterly | +₹12,69,346 |
+| monthly | **+₹1,27,62,372** |
+| weekly | +₹1,50,25,188 |
+| daily | +₹61,37,384 |
+
+**This entry has now flipped twice, and both flips were caused by the universe rather than
+by the weighting rule.** That is the honest reading and it is worth more than either verdict:
+whether trimming winners is a rebalancing premium or a momentum tax **depends on how many
+of your holdings were selected for having already run**. In a universe defined by today's
+membership, the winners are over-represented by construction, so trimming them is close to
+free — and the mandated universe is exactly that universe. The submitted configuration
+therefore uses **reset**, on evidence measured in the frame it will be scored in, with the
+mechanism stated rather than hidden.
 
 ### B3-r · What pays the cost under drift? `FROZEN`
 **The B12 reserve multiple applies to deployable cash, not to book value.**
@@ -616,6 +704,45 @@ This same definition sets A5's "full year of history" for eligibility, so one nu
 governs both and they cannot drift apart. A name needs 252 trading days of unbroken
 closes before the formation date (253 observations) before it can be ranked.
 
+### C2-r · The lookback was frozen and never swept. Now it has been. `CONFIRMED 2026-09-02`
+**252/21 stays — and it is the argmax of its own surface, not merely inside the band.**
+
+C2 was frozen at the start of the project on the published 12-1 convention, and until
+2026-09-02 no other value had been run. Every other axis in this project was swept; this
+one was asserted, which is the weakest position to be in when a panel asks "did you check
+the lookback?"
+
+The `SIG` grid (CLAUDE.md §11): `lookback ∈ {126, 189, 252} × skip ∈ {0, 21}`, six cells in
+the submitted frame (monthly + reset), each against the band that frame already had —
+σ = ₹74,70,579, drawn before the grid was conceived. **No band was re-drawn**, because a
+random draw ignores the signal entirely, so the yardstick could not move.
+
+PNL in ₹ crore, and `z` against the incumbent in that same σ:
+
+| lookback | skip 0 | skip 21 | | z, skip 0 | z, skip 21 |
+|---|---|---|---|---|---|
+| 126 | 7.36 | 8.65 | | −4.56 | −2.83 |
+| 189 | 8.93 | 8.39 | | −2.46 | −3.18 |
+| **252** | 10.63 | **10.76** | | −0.17 | **0.00** |
+
+**The adoption rule was fixed before the run and never had to be exercised:** a cell
+replaced the incumbent only if it beat it by more than 1σ, and **0 of 6 cleared** — against
+a null expectation of about 1 on luck alone. The incumbent is also simply the best cell, so
+this is not a case of keeping a tie on principle.
+
+**Predictions scored.** (2) `skip = 0` costs little — **CONFIRMED**, −₹13,06,362, −0.17σ, well
+inside the band, so short-horizon reversal is not doing measurable work here either way.
+(3) shorter lookbacks lose — **half**: confirmed monotone at skip 0 (7.36 < 8.93 < 10.63),
+**failed** at skip 21, where 189×21 (8.39) falls below 126×21 (8.65). Recorded as failed
+rather than reworded; the inversion is 0.35σ, inside the band, and the 252 row wins by a
+distance at both skips regardless.
+
+**What this does to the zero-fitted-parameter defence.** It changes it, and the report says
+so plainly. The claim is no longer "we never tuned the lookback" but "**the lookback was
+swept over six pre-registered cells against a band fixed in advance, and the convention we
+started with won outright**". That is a stronger statement, and it is one an evaluator can
+reproduce from `output/sweep/sig_summary.csv`.
+
 ### C3 · Compare each stock against whom? `FROZEN 2026-08-30`
 **All eligible stocks pooled together** — one ranking over everything eligible on the date.
 
@@ -688,7 +815,7 @@ reversal arm is ever wanted, C8 reopens and must be answered on its own evidence
 C15 records the related trap: signing F8 negatively would have admitted the same reversal
 bet through a different column, so excluding F7 only works if F8's sign is positive.
 
-### C9 · How much weight does each feature get? `FROZEN 2026-08-30`
+### C9 · How much weight does each feature get? `FROZEN 2026-08-30` · `AMENDED C9-r 2026-08-30`
 **Equal — one third each — fixed in `config.yaml` before any V1 result was seen.** With
 three features there is no weight vector to search, so V0's zero-fitted-parameter defence
 carries into V1 intact and any V1 gain is attributable to the feature set alone.
@@ -708,6 +835,46 @@ and the tilt is a statable rule rather than a number picked from the air.
 Fitting the weights on 2021–25 was considered and **refused**: it fits on the scoring
 window, the band could no longer adjudicate the result, and no V1 number would be
 falsifiable.
+
+#### C9-r · The axis is opened to a pre-registered set, and "only these two" is withdrawn
+
+**Amended the same day, after the V1 slate lost, and the reason matters.** C9's closing
+sentence — *"Only these two vectors are ever tried"* — is withdrawn. It was never the right
+rule: §8's backlog item 1 (*"feature weight variants on the composite"*) was logged **before
+any V1 result existed** and C9 quietly foreclosed it. Judging a whole axis on two points is
+the single-vector bias that backlog item was written to remove, and reporting "the composite
+lost" on two weight vectors overstates what two vectors can establish.
+
+**Five more vectors, declared as one set in `CLAUDE.md` §11 (`WGT`) before any of them ran**,
+with six pre-registered predictions and the expected shape stated in advance:
+
+| Vector | Weights | `w_mom` | Role |
+|---|---|---|---|
+| `no_ddown` | 1 / 1 / 0 | 0.500 | isolation — drops drawdown, keeps ID |
+| `no_idisc` | 1 / 0 / 1 | 0.500 | isolation — drops ID, keeps drawdown |
+| `w3` | 3 / 1 / 1 | 0.600 | ladder |
+| `w6` | 6 / 1 / 1 | 0.750 | ladder |
+| `w8` | 8 / 1 / 1 | 0.800 | ladder ceiling |
+
+**This is not the fitting C9 refused, and the difference is worth stating precisely.** C9
+refused *optimising* weights on 2021–25 — searching a continuous space and keeping the
+argmax. `WGT` declares a fixed set in advance, runs every one unconditionally, reports all
+42 cells including the losers, and binds itself to a **shape** claim (monotonicity across six
+independent frames) rather than an argmax claim. The selection rule is untouched: a cell is
+adopted only if it beats `PIT-wk-drift`'s ₹4,85,51,143, which was fixed before `WGT` existed.
+**Measured: 0 of 42 cleared it, and 0 of 42 reached even +1σ against their own frame's V0.**
+
+**Two mechanical consequences.** A weight of **0** is now legal, which is how the isolation
+vectors drop a feature without disturbing `composite.features` or its signs (C10 stays
+frozen); `features.weights` accordingly asserts `>= 0` and refuses **negative** weights,
+since a negative weight would silently invert a feature and could contradict
+`composite.feature_signs`. And `features.weight_vector_names` derives the declared set from
+the config rather than listing it in code, so the YAML, the sweep and the tests cannot
+disagree about which vectors exist.
+
+**What C9's original reasoning got right, and keeps.** Integers normalised at use, so every
+vector is a statable rule with no floating-point constant anywhere. And the refusal to fit:
+no weight here was chosen by looking at a result.
 
 ### C10 · Which measurements go into the V1 score? `FROZEN 2026-08-30`
 **Three: 12-month momentum (F1), information discreteness (F9), and drawdown from the
@@ -1035,19 +1202,26 @@ question the other cannot.
 
 # What's left
 
-**6 open.** Nothing on this list blocks V0 or the noise band.
+**Nothing.** Every decision in this ledger is closed, and `cfg.pending()` returns empty —
+there is no `null` in `config.yaml` waiting on an answer.
 
-| Blocks | Decisions |
+Two entries are `DEAD` rather than answered (C4, C8): their questions ceased to exist when
+scaled ranks replaced z-scores and the reversal feature was dropped. Each says so in place
+rather than being quietly counted as resolved.
+
+**Three entries were later found wrong and reversed**, which is the part of this ledger
+worth reading:
+
+| Entry | What happened |
 |---|---|
-| The V1 composite | C3, C4, C5, C8, C9 |
-| Documentation only | B10 |
+| **A3 → A3-r** | Conceded "no free 2021 membership list exists" without checking. 27 NSE press releases cover the window. The point-in-time rebuild then measured the conceded bias at 488 pp — and the organisers' clarification made today's constituents the mandated rule anyway, so the reconstruction became the *measurement* instead of the rule. |
+| **B3** | Reversed **twice**. Reset beat drift on today's constituents, drift beat reset point-in-time, reset wins again on the mandated universe. Both flips were caused by the universe, not the weighting rule. |
+| **A19** | Not a reversal but a retired assumption: §8 called a smallcap tilt "the largest single PNL lever". Measured, the lever points **down** — −₹4.39 Cr at the submitted cadence. |
 
-One more is deliberately unresolved rather than open:
+**No code was ever written against an open decision.** Each open one was a `null` in
+`config.yaml`; reading it raised an error naming the decision, and the config loader refuses
+to start if someone fills in a value without first recording it here.
 
-- **How weights are reported** — target, executed, or daily drifted — is deferred until
-  the strategy settles, since it changes no number. The backtest emits all three, so the
-  choice stays free.
-
-**No code is written against an open decision.** Each one is a `null` in `config.yaml`;
-reading it raises an error naming the decision, and the config loader refuses to start if
-someone fills in a value without first recording it here.
+**One thing is deliberately unresolved rather than open** — how weights are *reported*
+(target, executed, or daily drifted) — because it changes no number. The backtest emits all
+three, so the choice stays free.

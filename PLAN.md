@@ -1,7 +1,9 @@
 # V1 build plan
 
-Written 29 Aug 2026. The route from `PIT-wk-drift` (the selected V0-family configuration)
-to a V1 composite signal, and every design decision that route requires.
+Written 29 Aug 2026. **Closed 2 Sep 2026 — all seven phases done; V1 was measured and
+rejected.** The route from the selected V0-family configuration to a V1 composite signal,
+and every design decision that route requires. Kept as written rather than rewritten: it is
+the plan that was followed, including to a negative result.
 
 **How this file is used.** Phases are worked **one at a time**, each opened in plan mode.
 A phase's decisions are answered *before* its code is written (`CLAUDE.md` §2). When a
@@ -22,9 +24,14 @@ open entry in `DECISIONS.md`, the original ID is given.
 | ~~**2**~~ | **DONE 2026-08-30.** Combination rule frozen as **C17** (scaled ranks); C3 and C9 closed, C4 and C8 `DEAD`, C5 `NON-ISSUE`. `cfg.pending()` is empty for the first time. | D6–D11 | — |
 | ~~**3**~~ | **DONE 2026-08-30.** Five-arm `V1` slate and six predictions written into `CLAUDE.md` §11 before any arm ran. | D12–D14 | — |
 | ~~**4**~~ | **DONE 2026-08-30.** `features.py` + `05_v1.py` built, 5 arms run, no band re-run. **All five lost, −3.47σ to −5.22σ.** V1 is not adopted; `PIT-wk-drift` remains the submission. `NOTES.md` N6, `CLAUDE.md` §11. | none | 4 min |
-| **5** | Weighting axis: two cells, or skip. | D15–D16 | ~20 min |
-| **6** | 2026 rejection filter, on survivors only (§9). | none | ~10 min |
-| **7** | Freeze the configuration. Then the report. | none | — |
+| ~~**5**~~ | **DONE 2026-08-30.** The weighting axis went further than two cells: `WGT`, 7 vectors × 6 frames = 42, all rejected. | D15–D16 | 100 s |
+| ~~**6**~~ | **DONE.** 2026 filter run on every survivor; all pass. §9 held — it never selected anything. | none | — |
+| ~~**7**~~ | **DONE 2026-09-02.** Configuration frozen: **`MAND-mo-reset`**, ₹10,76,49,806. See `CLAUDE.md` §15. Report scaffolded in `REPORT_OUTLINE.md`. | none | — |
+
+**This file is now closed.** It planned the route to a V1 composite; the composite was
+built, measured across 46 arms and two universes, and rejected every time. The route it
+describes was walked in full and the destination turned out not to be worth arriving at,
+which is a result rather than a failure of the plan. `CLAUDE.md` §15 carries live status.
 
 Phase 0 runs without any answer and is a prerequisite for D1: F8's inclusion turns on a
 correlation this project has not measured. It introduces no selection bias because nothing

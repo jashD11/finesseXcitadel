@@ -54,15 +54,26 @@ def _tagged(name: str, tag: str) -> str:
     return f"{stem}{tag}.{ext}"
 
 
-def apply_overrides(cfg, calendar_name: str | None, weighting: str | None) -> str:
+def apply_overrides(cfg, calendar_name: str | None, weighting: str | None,
+                    lookback: int | None = None, skip: int | None = None,
+                    out_tag: str = "") -> str:
     """
-    Point the config at one cell of the `FREQ` grid and return a directory label.
+    Point the config at one variant cell and return a directory label.
 
     Returns "" for the baseline config, which keeps V0's artefacts exactly where they
     have always been. Any *other* cell writes under `output/sweep/<label>/`, because
     `output.nav` and friends are bare filenames -- without this a second cadence would
     silently overwrite the entire V0 baseline, and the ledger's `Δ vs V0` would be
     measured against a file that no longer holds V0.
+
+    Four axes, each optional and each visible in the label:
+
+    - `--calendar` / `--weighting`: the `FREQ` grid (B1, B3).
+    - `--lookback` / `--skip`: the `SIG` grid (C2, pre-registered 2026-09-02). C2 froze
+      252/21 and it was never swept; the label carries `mom<lookback>x<skip>` so a cell
+      can never be mistaken for the baseline in a directory listing.
+    - `--out-tag`: a free prefix for a variant that changes neither, such as the `SMALL`
+      arm, which changes only the snapshot it reads.
     """
     if calendar_name is not None:
         if calendar_name not in calendar.supported_calendars():
@@ -71,12 +82,18 @@ def apply_overrides(cfg, calendar_name: str | None, weighting: str | None) -> st
         cfg._flat["execution.rebalance_calendar"] = calendar_name
     if weighting is not None:
         cfg._flat["weighting.reset_to_target"] = (weighting == "reset")
+    if lookback is not None:
+        cfg._flat["signal.lookback"] = int(lookback)
+    if skip is not None:
+        cfg._flat["signal.skip"] = int(skip)
 
     cadence = str(cfg["execution.rebalance_calendar"]).replace("_first_trading_day", "")
     rule = "reset" if bool(cfg["weighting.reset_to_target"]) else "drift"
-    if calendar_name is None and weighting is None:
+    signal = ("" if lookback is None and skip is None
+              else f"mom{int(cfg['signal.lookback'])}x{int(cfg['signal.skip'])}")
+    if not any((calendar_name, weighting, signal, out_tag)):
         return ""
-    return f"{cadence}_{rule}"
+    return "_".join(p for p in (out_tag, signal, cadence, rule) if p)
 
 
 def output_dir(cfg, label: str):
@@ -116,18 +133,29 @@ def main() -> int:
                     help="override execution.rebalance_calendar (FREQ grid, CLAUDE.md §11)")
     ap.add_argument("--weighting", default=None, choices=("reset", "drift"),
                     help="override weighting.reset_to_target (B3)")
+    ap.add_argument("--lookback", type=int, default=None,
+                    help="override signal.lookback (SIG grid, C2)")
+    ap.add_argument("--skip", type=int, default=None,
+                    help="override signal.skip (SIG grid, C2)")
+    ap.add_argument("--out-tag", default="",
+                    help="prefix the output directory, for a variant that changes "
+                         "neither cadence nor signal (e.g. the SMALL arm's snapshot)")
+    ap.add_argument("--as-of", default=AS_OF,
+                    help=f"snapshot to run on (default {AS_OF}); the SMALL arm's "
+                         f"300-name universe is a different dated snapshot")
     args = ap.parse_args()
     start_key, end_key = WINDOWS[args.window]
     tag = "" if args.window == "main" else "_stress"
 
     cfg = load()
-    label = apply_overrides(cfg, args.calendar, args.weighting)
+    label = apply_overrides(cfg, args.calendar, args.weighting,
+                            args.lookback, args.skip, args.out_tag)
     pending = cfg.pending()
     print(f"[v0] config OK — {len(pending)} decisions still open "
           f"({', '.join(sorted(set(pending.values())))}), none blocking V0")
 
-    panel = clean.load_panel(cfg, clean.panel_path(cfg, AS_OF),
-                             clean.universe_path(cfg, AS_OF))
+    panel = clean.load_panel(cfg, clean.panel_path(cfg, args.as_of),
+                             clean.universe_path(cfg, args.as_of))
     capital = float(cfg["mandate.capital"])
     start = pd.Timestamp(cfg[start_key])
     end = pd.Timestamp(cfg[end_key])

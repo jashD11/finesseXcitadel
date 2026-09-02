@@ -243,3 +243,48 @@ def test_stale_flag_catches_patanjali_and_only_patanjali(panel):
     flagged = sorted(panel.symbols[i] for i in panel.stale.columns
                      if panel.stale[i].any())
     assert flagged == ["PATANJALI"]
+
+
+# ── A3-r membership mode ─────────────────────────────────────────────────────
+
+
+def _universe_frame(panel, historical):
+    """The universe file's shape, with `historical` marked as not-a-current-member."""
+    return pd.DataFrame({
+        "isin": list(panel.isins),
+        "symbol": [panel.symbols[i] for i in panel.isins],
+        "index_name": [clean.HISTORICAL_ONLY if panel.symbols[i] in historical
+                       else "NIFTY100" for i in panel.isins],
+    })
+
+
+def test_current_constituents_gates_historical_names_out(cfg, panel):
+    """
+    A3-r: under the mandated mode a name is a member iff it is on today's lists, on
+    every date. This is the switch that decides the whole scored universe, so it is
+    asserted rather than trusted to a print statement.
+    """
+    dropped = {panel.symbols[panel.isins[0]]}
+    universe = _universe_frame(panel, dropped)
+    cfg._flat["universe.membership_mode"] = "current_constituents"
+    out = clean.apply_membership_mode(cfg, panel, universe)
+
+    assert not out.member[panel.isins[0]].any(), "a historical-only name must never be a member"
+    assert out.member.drop(columns=[panel.isins[0]]).all().all(), \
+        "a current constituent must be a member on every date"
+    # The mask is flat in time — that is the whole difference from point-in-time.
+    assert out.member.nunique().eq(1).all()
+
+
+def test_point_in_time_leaves_the_panel_mask_untouched(cfg, panel):
+    """The other mode must be a no-op: the panel's own A17 mask is the authority."""
+    cfg._flat["universe.membership_mode"] = "point_in_time"
+    out = clean.apply_membership_mode(cfg, panel, _universe_frame(panel, set()))
+    assert out.member is panel.member
+
+
+def test_an_unknown_membership_mode_raises(cfg, panel):
+    """A typo must fail loudly, not silently pick one of the two universes."""
+    cfg._flat["universe.membership_mode"] = "todays_constituents"
+    with pytest.raises(ConfigError):
+        clean.apply_membership_mode(cfg, panel, _universe_frame(panel, set()))
