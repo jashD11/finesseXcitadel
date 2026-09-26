@@ -26,7 +26,7 @@ open entry in `DECISIONS.md`, the original ID is given.
 | ~~**4**~~ | **DONE 2026-08-30.** `features.py` + `05_v1.py` built, 5 arms run, no band re-run. **All five lost, −3.47σ to −5.22σ.** V1 is not adopted; `PIT-wk-drift` remains the submission. `NOTES.md` N6, `PROJECT.md` §11. | none | 4 min |
 | ~~**5**~~ | **DONE 2026-08-30.** The weighting axis went further than two cells: `WGT`, 7 vectors × 6 frames = 42, all rejected. | D15–D16 | 100 s |
 | ~~**6**~~ | **DONE.** 2026 filter run on every survivor; all pass. §9 held — it never selected anything. | none | — |
-| ~~**7**~~ | **DONE 2026-09-02.** Configuration frozen: **`MAND-mo-reset`**, ₹10,76,49,806. See `PROJECT.md` §15. Report scaffolded in `REPORT_OUTLINE.md`. | none | — |
+| ~~**7**~~ | **DONE 2026-09-02.** Configuration frozen: **`MAND-mo-reset`**, ₹10,76,49,806. See `PROJECT.md` §15. Report scaffolded in `archive/REPORT_OUTLINE.md`. | none | — |
 
 **This file is now closed.** It planned the route to a V1 composite; the composite was
 built, measured across 46 arms and two universes, and rejected every time. The route it

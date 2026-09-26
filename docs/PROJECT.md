@@ -1143,7 +1143,8 @@ config.yaml            every parameter. no number lives anywhere else
 PROJECT.md              this file
 DECISIONS.md           the decision ledger — authoritative
 NOTES.md               analysis notebook — mechanism reasoning, raw material for the report
-PLAN.md                the V1 build plan — phases, and the decision queue behind each
+PLAN.md                the V1 build plan — phases, and the decision queue behind each (closed)
+archive/               superseded: the point-in-time-era walkthrough, the report outline
 src/
   config.py            load + validate; refuses a value for an open decision
   decisions.py         UnresolvedDecision, blocked()
@@ -1357,7 +1358,10 @@ the predictions that failed.
    it.** The claim is now "swept over six pre-registered cells against a band fixed in
    advance, and the convention we started with won outright". C2-r.
 
-### What is left
+### What was left, as of 2 Sep 2026
+
+*Status 2026-09-27: item 2 is done (the repo is public on GitHub), and the report outline
+is now `archive/REPORT_OUTLINE.md`.*
 
 1. **The 5–6 page report.** `REPORT_OUTLINE.md` has the structure, the word budget and a
    pointer to the source of every number; `output/report/numbers.md` and

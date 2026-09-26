@@ -2,7 +2,7 @@
 
 Written 2 Sep 2026, for whoever writes the 5–6 page report. This is the scaffold and the
 data pack — not the report. It maps the organisers' requirements
-(`docs/guidelines.docx` §9) onto sections, gives each a word budget, states what each must
+(the organisers' guidelines document, §9 — not redistributed here) onto sections, gives each a word budget, states what each must
 claim, and names the file every figure comes from.
 
 **One rule while writing: no number gets typed from memory.** Everything required is

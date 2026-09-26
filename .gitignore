@@ -18,3 +18,20 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .DS_Store
+
+# The organisers' Round 2 brief: their document, not ours to redistribute. The mandate
+# it sets is restated in docs/PROJECT.md §1.
+docs/guidelines.docx
+
+# Local environments and editor state
+.venv/
+venv/
+.env
+*.egg-info/
+.ipynb_checkpoints/
+.idea/
+.vscode/
+
+# Session notes and briefs kept outside version control
+CLEANUP_*.md
+RESUME_BRIEF.md

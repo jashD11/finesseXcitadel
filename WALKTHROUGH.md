@@ -443,7 +443,7 @@ window the rule says decides.
 | Portfolio composition and weights | `output/report/composition.md` |
 | **Every configuration tested — all 63 runs, one table** | `output/report/configurations.md` |
 | The narrative trial ledger, with predictions scored | `docs/PROJECT.md` §11 |
-| Handoff pack for whoever writes the report | `docs/REPORT_OUTLINE.md` |
+| Handoff pack written for the report author (archived) | `docs/archive/REPORT_OUTLINE.md` |
 | Every design decision, including reversals | `docs/DECISIONS.md` |
 | Mechanism arguments and bug hunts | `docs/NOTES.md` |
 | How to reproduce all of it | [`README.md`](README.md) §4 |
