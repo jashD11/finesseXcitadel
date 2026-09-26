@@ -1,12 +1,13 @@
 # Decisions
 
 Every choice where a reasonable person could have picked differently and the numbers
-would have changed. **59 decisions: 51 frozen (one of them amended — C9/C9-r), 1 resolved on evidence, 3 dead,
-4 non-issues, and none open.** They appear below as
-58 entries — A5 and C6 are two entries for one question, and D6/D7/D8 is one entry covering
+would have changed. **61 entries, none open:** 48 frozen, 3 amended or superseded (A3 → A3-r,
+C9 → C9-r), 2 resolved on evidence (A19, B3), 1 confirmed by a sweep (C2-r), 3 dead and 4
+non-issues. A5 and C6 are two entries for one question, and D6/D7/D8 is one entry covering
 three.
 
-*Recounted 2026-08-30, twice.* The tally before Phase 1 read "50 decisions ... 48 entries,
+*Recounted from the headings on 2026-09-27*, after A17–A19, A3-r, C2-r and D11-r were added.
+The previous recount, on 2026-08-30, read 58 entries. *That recount's own note:* The tally before Phase 1 read "50 decisions ... 48 entries,
 1 under trial, 6 still open" and was stale in three places at once: there were 50 entries
 not 48, B3 stopped being under trial when it resolved on 28 Aug, and only five entries were
 `OPEN`. Counted directly from the headings rather than incremented, then again after Phase 2
@@ -319,8 +320,6 @@ rather than restated, and the arms keep their `pass`.
 
 ---
 
-# B · Mechanics — dates, trading, accounting
-
 ### A17 · Where does historical index membership come from? `FROZEN 2026-08-28`
 **NSE's own index-review press releases, rebuilt by rolling today's published list
 backwards — and the roll-back checks itself.**
@@ -395,7 +394,7 @@ ever measured, so on 2026-09-02 it was: today's Smallcap 100 added to the univer
 | **monthly, reset** (submitted) | **₹10,76,49,806** | ₹6,37,38,800 | **−₹4,39,11,006** |
 
 **The pre-registered prediction was that PNL would rise materially. It fell, in both
-frames, and by −5.1σ in the submitted one.** Recorded as a failed prediction rather than
+frames, and by −5.1σ in the submitted one** (σ of the quarterly V0 band, ₹86,16,185). Recorded as a failed prediction rather than
 reworded.
 
 **And the mechanism is the interesting part, because the universe did get better.** The
@@ -421,9 +420,15 @@ added name whose worst interior gap exceeds `clean.ffill_max_days`, and prints w
 dropped. The exclusion errs against the arm — Force Motors ran hard in 2024 — which is the
 right direction for a name we cannot price honestly.
 
+# B · Mechanics — dates, trading, accounting
+
 ### B1 · When do we rebalance? `FROZEN`
 **Quarterly — the first trading day of January, April, July and October.** 20 rebalance
 dates over the scoring window.
+
+*Status 2026-09-27: quarterly remains the V0 baseline and the config default. The submitted
+configuration rebalances **monthly** (`--calendar monthly_first_trading_day`), chosen by the
+cadence × weighting grid in `PROJECT.md` §11 and B3 below.*
 
 Two reasons beyond "easy to explain". The first rebalance lands on the first trading day
 of 2021, which *is* the start of the mandated window — so B7 stops being a separate
@@ -472,7 +477,7 @@ using a price we then trade at.
 There's a specific trap here: the obvious way to slice data in code (`panel.loc[:t]`)
 *includes* today. There is a dedicated function and a test to prevent exactly that.
 
-### B3 · Do we rebalance back to equal weights? `RESOLVED 2026-08-28 — drift`
+### B3 · Do we rebalance back to equal weights? `RESOLVED 2026-09-02 — reset (mandated universe); the 2026-08-28 drift verdict was on the point-in-time universe`
 **V0 keeps resetting all 10 back to 1/10 at every rebalance. Both rules are now being
 measured against each other rather than assumed.**
 

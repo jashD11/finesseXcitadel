@@ -7,9 +7,10 @@ read from a CSV, none is transcribed. Machine-readable version:
 
 The bar: **V0 quarterly = ₹87,646,846**. The submission: **₹107,649,806** (monthly, reset).
 
-`z` is the arm's distance from the *quarterly baseline* in units of that arm's own
-noise-band σ where one exists. Cells without a band were adjudicated against their
-frame's band in the slate that ran them; see `docs/PROJECT.md` §11.
+`vs V0` is the arm's PNL minus the quarterly baseline's, in rupees. Its distance in
+noise-band σ, where a band exists, is the `z_vs_frame_v0` column of the CSV. Cells
+without a band were adjudicated against their frame's band in the slate that ran
+them; see `docs/PROJECT.md` §11.
 
 ## MAND — Cadence × weighting rule (9 runs)
 

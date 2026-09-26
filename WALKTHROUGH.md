@@ -240,7 +240,7 @@ are measured over the same rebalance dates:
 *(At quarterly the same pair reads +284.90% → +307.11%, and the strategy still falls,
 ₹8,76,46,846 → ₹8,04,04,132. The direction does not depend on the cadence.)*
 
-**The universe got better and the strategy got worse by ₹4.39 crore (−5.1σ).** That
+**The universe got better and the strategy got worse by ₹4.39 crore (−5.1σ of the V0 band).** That
 combination rules out the easy explanations — it is not that smallcaps did badly, and it is
 not costs.
 
@@ -276,7 +276,7 @@ this avoids that.
 |---|---|---|---|---|
 | **V0** | **₹8,76,46,846** | — | **2.21** | **−32.5%** |
 | `rm-solo` — residual momentum instead of 12-1 | ₹4,33,02,965 | −5.15σ | 1.86 | −31.1% |
-| `tilt` — composite, 2/1/1 weights | ₹2,92,15,951 | −6.78σ | 1.34 | −34.2% |
+| `tilt` — composite, 2/1/1 weights | ₹2,92,15,951 | −6.78σ | 1.34 | −34.1% |
 | `buffer` — composite plus a 10/20 rank buffer | ₹2,87,88,342 | −6.83σ | 1.39 | −35.1% |
 | `base` — composite, equal weights | ₹2,31,22,522 | −7.49σ | 1.19 | −33.9% |
 
