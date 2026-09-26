@@ -1,0 +1,10 @@
+# Exact versions that produced every committed number (Python 3.12).
+pandas==3.0.3
+numpy==2.2.6
+scipy==1.14.0
+pyarrow==19.0.0
+matplotlib==3.9.0
+PyYAML==6.0.1
+requests==2.34.2
+yfinance==1.4.1
+pytest==7.4.4
