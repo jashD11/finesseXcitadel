@@ -79,6 +79,7 @@ data/                       constituent lists, overrides with evidence, NSE pres
                             generated data-quality report (price snapshots are not committed)
 docs/                       PROJECT (mandate, method, trial ledger), DECISIONS (61 entries),
                             NOTES (analysis notebook), PLAN (closed V1 plan), archive/
+presentation/               Finsearch_jury_deck.pdf (final jury-round deck); draft/ (earlier HTML draft)
 ```
 
 ## Setup and reproduce

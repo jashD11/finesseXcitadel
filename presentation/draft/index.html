@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Momentum Jury Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Layout idea: a stack of 16:9 slides on a cool grey desk, sized in container units so each slide scales like a real deck; speaker notes sit under each slide. Single light theme by choice: the charts are white PNGs. */
+  --desk: #e9ecf1;
+  --slide: #ffffff;
+  --ink: #16233b;
+  --muted: #5b6577;
+  --rule: #d9dee6;
+  --navy: #1f3a68;     /* strategy line in the charts */
+  --rust: #b8492a;     /* equal-weight line in the charts; used as the accent */
+  --good: #2f7d4f;
+  --bad: #a83a32;
+  --tint: #f2f4f8;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { scroll-snap-type: y proximity; }
+body {
+  margin: 0; background: var(--desk); color: var(--ink);
+  font-family: var(--body); line-height: 1.35;
+}
+.deck { display: flex; flex-direction: column; align-items: center; gap: 28px; padding: 28px 16px 80px; }
+.unit { width: min(100%, 1280px); display: flex; flex-direction: column; gap: 8px; scroll-snap-align: start; scroll-margin-top: 16px; }
+
+.slide {
+  --u: 1cqi;
+  container-type: inline-size;
+  aspect-ratio: 16 / 9;
+  background: var(--slide);
+  border: 1px solid var(--rule);
+  box-shadow: 0 1px 2px rgba(22,35,59,.06), 0 8px 24px rgba(22,35,59,.06);
+  position: relative;
+  display: flex; flex-direction: column;
+}
+.inner {
+  flex: 1; display: flex; flex-direction: column; gap: calc(var(--u) * 1.4);
+  padding: calc(var(--u) * 3) calc(var(--u) * 3.6) calc(var(--u) * 2.6);
+  font-size: calc(var(--u) * 1.32);
+}
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: calc(var(--u) * 2); }
+.kicker {
+  font-family: var(--mono); font-size: calc(var(--u) * 0.95); letter-spacing: .04em;
+  color: var(--rust); text-transform: uppercase; margin: 0 0 calc(var(--u) * .5);
+}
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: -.005em; }
+h2 { font-size: calc(var(--u) * 2.75); line-height: 1.08; font-weight: 600; max-width: 30ch; }
+h3 { font-size: calc(var(--u) * 1.45); font-weight: 600; margin-bottom: calc(var(--u) * .5); }
+p { margin: 0; }
+.chips { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: calc(var(--u) * .4); max-width: 34%; }
+.chip {
+  font-family: var(--mono); font-size: calc(var(--u) * .78); white-space: nowrap;
+  padding: calc(var(--u) * .25) calc(var(--u) * .6); border-radius: 999px;
+  border: 1px solid var(--navy); color: var(--navy);
+}
+.foot {
+  margin-top: auto; display: flex; justify-content: space-between; gap: 2em;
+  font-family: var(--mono); font-size: calc(var(--u) * .8); color: var(--muted);
+  border-top: 1px solid var(--rule); padding-top: calc(var(--u) * .7);
+}
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: .82em; }
+.grid { display: grid; gap: calc(var(--u) * 2); }
+.g2 { grid-template-columns: 1fr 1fr; }
+.g3 { grid-template-columns: repeat(3, 1fr); }
+.g-55-45 { grid-template-columns: 1.2fr 1fr; }
+.g-45-55 { grid-template-columns: 1fr 1.25fr; }
+ul.tight { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: calc(var(--u) * .45); }
+ul.tight li::marker { color: var(--rust); }
+.panel { background: var(--tint); padding: calc(var(--u) * 1.3) calc(var(--u) * 1.5); border-left: 3px solid var(--navy); }
+.panel.rust { border-left-color: var(--rust); }
+.callout { font-family: var(--display); font-size: calc(var(--u) * 1.6); font-weight: 600; line-height: 1.2; color: var(--navy); }
+img.chart { width: 100%; height: auto; display: block; border: 1px solid var(--rule); }
+.cap { font-size: calc(var(--u) * .95); color: var(--muted); margin-top: calc(var(--u) * .4); }
+
+table { border-collapse: collapse; width: 100%; font-size: calc(var(--u) * 1.08); }
+th, td { text-align: left; padding: calc(var(--u) * .45) calc(var(--u) * .6); border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--mono); font-size: .8em; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; border-bottom: 1.5px solid var(--ink); }
+td.r, th.r { text-align: right; }
+td.num, td.r { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.hl td { background: #eef2f9; font-weight: 600; }
+.verdict { font-family: var(--mono); font-size: .82em; font-weight: 600; padding: .1em .5em; border-radius: 3px; white-space: nowrap; }
+.v-yes { background: #e3f1e8; color: var(--good); }
+.v-no { background: #f6e3e1; color: var(--bad); }
+.v-keep { background: #e6ecf6; color: var(--navy); }
+
+/* metric tiles */
+.tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+.tile { background: var(--slide); padding: calc(var(--u) * .9) calc(var(--u) * 1); display: flex; flex-direction: column; gap: calc(var(--u) * .2); }
+.tile .lbl { font-family: var(--mono); font-size: calc(var(--u) * .78); color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.tile .val { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: calc(var(--u) * 1.75); font-weight: 600; color: var(--navy); line-height: 1.1; }
+.tile .sub { font-size: calc(var(--u) * .9); color: var(--muted); }
+.tile.lead { grid-column: span 2; background: var(--navy); }
+.tile.lead .lbl, .tile.lead .sub { color: #c9d4e6; }
+.tile.lead .val { color: #fff; font-size: calc(var(--u) * 2.15); white-space: nowrap; }
+
+/* rule flow */
+.flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: calc(var(--u) * 1); }
+.step { border-top: 3px solid var(--navy); padding-top: calc(var(--u) * .6); }
+.step .n { font-family: var(--mono); color: var(--rust); font-size: calc(var(--u) * .85); }
+.step b { display: block; font-family: var(--display); font-size: calc(var(--u) * 1.4); margin: calc(var(--u) * .15) 0 calc(var(--u) * .3); }
+.step p { font-size: calc(var(--u) * 1.08); }
+
+/* cadence heat table */
+.heat td.c { text-align: center; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.heat td.win { background: var(--navy); color: #fff; font-weight: 600; }
+.heat td.mid { background: #c9d4e6; }
+.heat td.low { background: #eef2f9; }
+
+/* title slide */
+.title-grid { flex: 1; display: grid; grid-template-columns: 1.35fr 1fr; gap: calc(var(--u) * 4); align-items: center; }
+h1 { font-size: calc(var(--u) * 5.2); line-height: 1; font-weight: 700; color: var(--navy); }
+.lede { font-size: calc(var(--u) * 1.6); color: var(--muted); max-width: 40ch; margin-top: calc(var(--u) * 1.4); }
+.team { margin-top: calc(var(--u) * 2.4); display: flex; flex-direction: column; gap: calc(var(--u) * .3); }
+.team .tn { font-family: var(--display); font-size: calc(var(--u) * 2); font-weight: 600; }
+.big-result { border-left: 3px solid var(--rust); padding-left: calc(var(--u) * 2); display: flex; flex-direction: column; gap: calc(var(--u) * 1); }
+.big-result .from { font-family: var(--mono); font-size: calc(var(--u) * 1.6); color: var(--muted); }
+.big-result .to { font-family: var(--mono); font-size: calc(var(--u) * 5); font-weight: 600; color: var(--navy); line-height: 1; }
+.placeholder { background: #fff4d6; padding: 0 .25em; }
+
+.notes {
+  font-size: 14px; color: var(--muted); background: transparent;
+  border-left: 2px solid var(--rust); padding: 4px 12px; max-width: 110ch;
+}
+.notes b { color: var(--ink); font-weight: 600; }
+
+.toolbar {
+  position: fixed; right: 16px; bottom: 16px; display: flex; gap: 8px; align-items: center;
+  background: var(--slide); border: 1px solid var(--rule); padding: 6px 8px; font-family: var(--mono); font-size: 13px;
+  box-shadow: 0 4px 16px rgba(22,35,59,.12);
+}
+.toolbar button {
+  font: inherit; border: 1px solid var(--navy); background: var(--slide); color: var(--navy);
+  padding: 4px 10px; cursor: pointer;
+}
+.toolbar button:hover { background: var(--navy); color: #fff; }
+button:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
+
+@media (max-width: 760px) {
+  .slide { --u: 8.5px; aspect-ratio: auto; }
+  .g2, .g3, .g-55-45, .g-45-55, .title-grid, .flow { grid-template-columns: 1fr; }
+  .tiles { grid-template-columns: repeat(2, 1fr); }
+  .chips { max-width: 100%; justify-content: flex-start; }
+  .top { flex-direction: column; }
+  .tbl-wrap { overflow-x: auto; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<main class="deck">
+
+<!-- 1 · TITLE -->
+<section class="unit" id="s1">
+  <div class="slide"><div class="inner">
+    <p class="kicker">Finesse × Citadel Portfolio Construction Challenge · Round 2 · Jury round</p>
+    <div class="title-grid">
+      <div>
+        <h1>Momentum, measured against luck</h1>
+        <p class="lede">A 12-1 momentum book of 10 stocks from the Nifty 100 and Nifty Midcap 100, rebalanced monthly, 1 Jan 2021 to 31 Dec 2025.</p>
+        <div class="team">
+          <span class="tn"><span class="placeholder">[Team name]</span></span>
+          <span class="muted"><span class="placeholder">[Member 1] · [Member 2] · [Member 3]</span></span>
+          <span class="num small muted">github.com/jashD11/finesseXcitadel</span>
+        </div>
+      </div>
+      <div class="big-result">
+        <span class="from">₹1.00 Cr in Jan 2021</span>
+        <span class="to">₹11.76 Cr</span>
+        <span class="muted">by Dec 2025, after 0.1% transaction costs</span>
+        <span class="callout">0 of 10,000 random 10-stock portfolios did better.</span>
+      </div>
+    </div>
+    <div class="foot"><span>Rationale · Robustness · Risk management · Transparency · Portfolio logic</span><span>01 / 11</span></div>
+  </div></div>
+  <aside class="notes"><b>Say:</b> “We built the simplest rule we could, measured it against luck, then spent the project trying to beat it. Nothing did. We'll also show you exactly what is inside the number, including the parts that flatter it.”</aside>
+</section>
+
+<!-- 2 · OVERVIEW -->
+<section class="unit" id="s2">
+  <div class="slide"><div class="inner">
+    <div class="top">
+      <div><p class="kicker">The strategy</p><h2>One ranking, ten names, equal weight, every month</h2></div>
+      <div class="chips"><span class="chip">Rationale</span><span class="chip">Sound portfolio logic</span></div>
+    </div>
+    <div class="flow">
+      <div class="step"><span class="n">01 · Universe</span><b>Eligible names</b><p>Today's Nifty 100 + Midcap 100 (200 names, as mandated). A stock needs a full year of prices and must have traded the day before. 174–192 eligible.</p></div>
+      <div class="step"><span class="n">02 · Signal</span><b>12-1 momentum</b><p>Return from 252 to 21 trading days ago, using closes through yesterday. The most recent month is skipped.</p></div>
+      <div class="step"><span class="n">03 · Select</span><b>Top 10</b><p>One ranking across both indices. Ties go to the stock already held. No optimiser.</p></div>
+      <div class="step"><span class="n">04 · Hold</span><b>1/10 each, monthly</b><p>Buy at the next open, reset to 10% each on the first trading day of every month. 60 rebalances, 0.1% on every trade.</p></div>
+    </div>
+    <div class="grid g-55-45" style="align-items:start">
+      <div class="tiles">
+        <div class="tile lead"><span class="lbl">Total Net PNL</span><span class="val">₹10,76,49,806</span><span class="sub">final value ₹11,76,49,806</span></div>
+        <div class="tile"><span class="lbl">Total return</span><span class="val">1,076.5%</span></div>
+        <div class="tile"><span class="lbl">CAGR</span><span class="val">63.78%</span></div>
+        <div class="tile"><span class="lbl">Sharpe</span><span class="val">2.42</span></div>
+        <div class="tile"><span class="lbl">Max drawdown</span><span class="val">−32.40%</span></div>
+        <div class="tile"><span class="lbl">Gain-to-loss</span><span class="val">2.01</span></div>
+        <div class="tile"><span class="lbl">Accuracy</span><span class="val">62.5%</span></div>
+        <div class="tile"><span class="lbl">Trades</span><span class="val">168</span><span class="sub">round trips · 2.02 per stock</span></div>
+        <div class="tile"><span class="lbl">Turnover</span><span class="val">7.36×</span><span class="sub">a year · costs ₹20.6 L</span></div>
+      </div>
+      <div class="panel">
+        <h3>Why momentum, and why this simple</h3>
+        <ul class="tight">
+          <li>The best-documented price anomaly: investors under-react to news, so trends persist for 3–12 months.</li>
+          <li>It needs only prices, and it is one ranking with nothing to estimate. The 12-1 lookback is the published convention, not fitted.</li>
+          <li>The score is raw PNL, so we built for return and excluded risk overlays in writing before building anything.</li>
+          <li>Benchmarks: equal-weight universe <span class="num">+280.6%</span>, Nifty 100 <span class="num">+89.4%</span>.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot"><span>Source: output/report/numbers.md §1–2</span><span>02 / 11</span></div>
+  </div></div>
+  <aside class="notes"><b>Say:</b> “The whole rule fits on one line. Every metric the guidelines ask for is in the tiles; slide 7 explains how each is defined.” <b>If asked “why not risk-adjust?”:</b> the scoring metric is Total Net PNL, so vol targeting or cash days would lower the score. We report Sharpe and a risk-adjusted percentile anyway.</aside>
+</section>
+
+<!-- 3 · DATA -->
+<section class="unit" id="s3">
+  <div class="slide"><div class="inner">
+    <div class="top">
+      <div><p class="kicker">Data preparation</p><h2>Clean prices first: splits, demergers and one fake trading day</h2></div>
+      <div class="chips"><span class="chip">Transparency</span><span class="chip">Robustness</span></div>
+    </div>
+    <div class="grid g3">
+      <div class="grid" style="gap:calc(var(--u)*1.2)">
+        <div>
+          <h3>Source and calendar</h3>
+          <ul class="tight">
+            <li>Yahoo Finance daily OHLCV, Jun 2019 – Aug 2026. The 18-month lead-in feeds the first 252-day lookback.</li>
+            <li>1,786 trading days. Removed 4 fake holiday bars with zero volume everywhere; kept 2 real Diwali Muhurat sessions.</li>
+            <li><b>2025-03-18 removed:</b> 191 of 193 closes unchanged from the day before. One stale row shifted every lookback after it and halved a stress result.</li>
+            <li>Snapshots are pinned and never overwritten. Stocks are keyed by ISIN, because tickers get renamed (Zomato → ETERNAL).</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <h3>Splits and bonuses</h3>
+        <p class="small muted" style="margin-bottom:calc(var(--u)*.5)">We checked all 79 splits across 61 stocks. Yahoo adjusts history only back to 1 January of the split year, so three showed false crashes:</p>
+        <table>
+          <thead><tr><th>Stock</th><th>Action</th><th class="r">Before</th><th class="r">Fixed</th></tr></thead>
+          <tbody>
+            <tr><td>MOTILALOFS</td><td>3:1 bonus, Jun 2024</td><td class="r">−74.6%</td><td class="r">+1.55%</td></tr>
+            <tr><td>CONCOR</td><td>1:4 bonus, Jul 2025</td><td class="r">−20.9%</td><td class="r">−1.10%</td></tr>
+            <tr><td>TRENT</td><td>1:2 bonus, Jun 2026</td><td class="r">−33.0%</td><td class="r">+0.43%</td></tr>
+          </tbody>
+        </table>
+        <p class="cap">Each ratio is confirmed by NSE's corporate-action record and by exchange closes matching to four decimals.</p>
+      </div>
+      <div class="panel rust">
+        <h3>Demergers: sell before the ex-date</h3>
+        <p class="small">TMPV (Oct 2025, −40.2%) and VEDL (Apr 2026, −64.9%) fell because holders received shares in a new company. NSE publishes no ratio to adjust for it, so we don't invent one.</p>
+        <ul class="tight small" style="margin-top:calc(var(--u)*.6)">
+          <li><b>Rule:</b> sell at the open of the last session before the ex-date; hold the cash until the next rebalance.</li>
+          <li><b>The off-by-one matters:</b> VEDL closed at 773.60 and opened at 289.50 on the ex-date. Selling on the ex-date gave +1.8% in the test window; one session earlier gave +8.6%.</li>
+          <li>The same rule applies to all 10,000 random portfolios.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="panel" style="padding-block:calc(var(--u)*.8)">
+      <p class="small"><b>Other rules:</b> a stock is buyable only if it traded the day before · moves above ±20% are flagged, never smoothed · gaps are filled forward for at most 5 days and never backwards (it never fires) · new listings wait a full year (26 names) · price return only, which understates a dividend-reinvesting book by about 9 pp but barely changes the ranking (ρ 0.99)</p>
+    </div>
+    <div class="foot"><span>Source: data/reports/data_quality.md · docs/DECISIONS.md A8, A16, B10</span><span>03 / 11</span></div>
+  </div></div>
+  <aside class="notes"><b>Say:</b> “Every correction cites an outside record. A price drop is never treated as proof of its own cause.” <b>Key point:</b> demergers are not adjusted, they are exited. That errs against us: we give up the spun-off shares. TRENT and VEDL fall in the 2026 stress window, not in the scored period.</aside>
+</section>
+
+<!-- 4 · VARIANTS -->
+<section class="unit" id="s4">
+  <div class="slide"><div class="inner">
+    <div class="top">
+      <div><p class="kicker">Variants tried</p><h2>We tried to beat the simple rule 58 times. Nothing did.</h2></div>
+      <div class="chips"><span class="chip">Robustness</span><span class="chip">Rationale</span><span class="chip">Transparency</span></div>
+    </div>
+    <p class="small muted">Each slate was written down with its predictions before it ran, then scored against a band of 10,000 random portfolios drawn in advance. Failed predictions are recorded as failed.</p>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Slate</th><th class="r">Runs</th><th>Why we tried it</th><th>What happened</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr class="hl"><td>Rebalance frequency × weighting<br><span class="muted small">quarterly / monthly / weekly / daily × reset / drift</span></td><td class="r">8</td><td>Holding period had never been tested, and resetting to 1/10 might “sell the winners”.</td><td>Monthly + reset: <b>+₹2.00 Cr</b> over quarterly (+2.32σ). Reset beats drift at every frequency.</td><td><span class="verdict v-yes">Adopted</span></td></tr>
+        <tr><td>Lookback × skip<br><span class="muted small">126 / 189 / 252 days × skip 0 / 21</span></td><td class="r">6</td><td>12-1 came from the literature and had never been checked.</td><td>252/21 is the best of all six. A challenger had to win by more than 1σ.</td><td><span class="verdict v-keep">Kept 12-1</span></td></tr>
+        <tr><td>Add Nifty Smallcap 100<br><span class="muted small">299 names instead of 200</span></td><td class="r">2</td><td>The rules allow it, and our backlog called it “the largest lever”.</td><td>The universe got better (+18.6 pp); the strategy got worse by <b>₹4.39 Cr</b> (−5.1σ).</td><td><span class="verdict v-no">Rejected</span></td></tr>
+        <tr><td>Composite signal<br><span class="muted small">momentum + steadiness of the rise + distance from 52-week high; rank buffer; residual momentum</span></td><td class="r">4</td><td>Add <i>how</i> a stock rose and <i>where</i> it sits, using one feature per concept chosen from a correlation study with no PNL.</td><td>All four lose by 5.15σ to 7.49σ. Sharpe and drawdown both get worse too.</td><td><span class="verdict v-no">Rejected</span></td></tr>
+        <tr><td>Composite feature weights<br><span class="muted small">7 weight vectors × 6 frames</span></td><td class="r">42</td><td>Two weight vectors cannot judge a whole axis.</td><td>0 of 42 beat the baseline. 0 reached +1σ, where luck alone predicts about 7.</td><td><span class="verdict v-no">Rejected</span></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="small muted">Screened but not run: conviction weighting, sector caps, a tree ensemble and a regime overlay. Slide 5 gives the reasons. All 63 runs, losers included: <span class="num">output/report/configurations.md</span></p>
+    <div class="foot"><span>Source: docs/PROJECT.md §11 trial ledger</span><span>04 / 11</span></div>
+  </div></div>
+  <aside class="notes"><b>Say:</b> “This slide is the strongest evidence that we didn't overfit. Each line was declared before we saw a number, and most of them lost.” <b>Smallcaps:</b> the universe improved while the rule got worse, which rules out both “smallcaps did badly” and “costs”. <b>Failed prediction to quote:</b> we predicted smallcaps would raise PNL; they cut it by ₹4.39 Cr.</aside>
+</section>
+
+<!-- 5 · WHY THIS VARIANT -->
+<section class="unit" id="s5">
+  <div class="slide"><div class="inner">
+    <div class="top">
+      <div><p class="kicker">Why this variant</p><h2>Monthly, reset to 1/10, and nothing else added</h2></div>
+      <div class="chips"><span class="chip">Sound portfolio logic</span><span class="chip">Rationale</span><span class="chip">Robustness</span></div>
+    </div>
+    <div class="grid g3">
+      <div>
+        <h3>The bar every change had to clear</h3>
+        <p class="small">10,000 random 10-stock portfolios use the same universe, dates, costs and engine. Only the stock picks differ, so their spread is pure luck. <b>If a change moves PNL by less than one σ of that spread, nothing was found.</b></p>
+        <p class="small" style="margin-top:calc(var(--u)*.7)">The selection rule was fixed before each grid ran: highest 2021–25 PNL wins. The 2026 window is used only to reject a candidate, never to choose one.</p>
+        <table class="heat" style="margin-top:calc(var(--u)*1)">
+          <thead><tr><th>PNL ₹ Cr</th><th class="r">reset</th><th class="r">drift</th><th class="r">Sharpe</th></tr></thead>
+          <tbody>
+            <tr><td>quarterly</td><td class="c mid">8.76</td><td class="c low">8.64</td><td class="r">2.21</td></tr>
+            <tr><td><b>monthly</b></td><td class="c win">10.76</td><td class="c mid">9.49</td><td class="r"><b>2.42</b></td></tr>
+            <tr><td>weekly</td><td class="c mid">9.99</td><td class="c low">8.49</td><td class="r">2.33</td></tr>
+            <tr><td>daily</td><td class="c mid">9.29</td><td class="c low">8.68</td><td class="r">2.26</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h3>Why monthly</h3>
+        <ul class="tight small">
+          <li><b>+₹2.00 Cr</b> over quarterly, +2.32σ on a fixed ruler.</li>
+          <li>It isn't bought with risk: Sharpe rises 2.21 → 2.42 and max drawdown is flat at −32%.</li>
+          <li><b>Return per unit of risk</b> against random books rises from the 63rd to the <b>96th percentile</b>. Monthly picks better, not just bigger.</li>
+          <li>The effect is an inverted U. Faster than monthly trades noise at the rank-10 boundary, and daily pays ₹88.7 L in costs.</li>
+          <li><b>Why reset:</b> it beats drift at all four frequencies. Topping losers back up to 1/10 is cheap when the holdings are recent winners.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Why nothing else was added</h3>
+        <table>
+          <thead><tr><th>Momentum rank</th><th class="r">Next-quarter return</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>1–10</td><td class="r">+9.56%</td></tr>
+            <tr><td>11–20</td><td class="r">+5.14%</td></tr>
+            <tr><td>21–30</td><td class="r">+6.03%</td></tr>
+            <tr><td>101+</td><td class="r">+4.19%</td></tr>
+          </tbody>
+        </table>
+        <p class="cap">Point-in-time universe, quarterly, 20 dates (docs/NOTES.md N7).</p>
+        <ul class="tight small" style="margin-top:calc(var(--u)*.6)">
+          <li><b>Payoff is a cliff at rank 10.</b> Extra features or extra names push picks over it, which is why every add-on lost.</li>
+          <li>Inside the top 10, return is flat in rank (Spearman +0.01), so <b>equal weight</b>: there is no ordering to tilt towards.</li>
+          <li><b>No optimiser:</b> a 10-name covariance matrix is mostly noise. <b>No overlay:</b> cash days cost score.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot"><span>Source: docs/PROJECT.md §5, §11 · docs/NOTES.md N7, N11 · docs/DECISIONS.md D11-r</span><span>05 / 11</span></div>
+  </div></div>
+  <aside class="notes"><b>Say:</b> “The 96th percentile per unit of risk is the number that says monthly picks better stocks, not just riskier ones.” <b>If asked about multiple comparisons:</b> monthly was the best of 8 pre-registered cells. It cleared the bar by 2.3σ on a deliberately strict ruler, and the jump in risk-adjusted standing is not something picking the top PNL would produce by chance. <b>Honest limit:</b> on a point-in-time universe the peak moves to weekly. The inverted-U shape is robust; the exact peak is not.</aside>
+</section>
+
+<!-- 6 · RESULTS I -->
+<section class="unit" id="s6">
+  <div class="slide"><div class="inner">
+    <div class="top">
+      <div><p class="kicker">Results · 1 of 2</p><h2>₹1 Cr became ₹11.76 Cr, ahead of both benchmarks every year</h2></div>
+      <div class="chips"><span class="chip">Transparency</span><span class="chip">Sound portfolio logic</span></div>
+    </div>
+    <div class="grid g-55-45" style="align-items:start">
+      <div>
+        <img class="chart" src="figures/01_growth.png" alt="Growth of ₹1 crore, 2021–2025, log scale. The strategy ends near ₹11.8 Cr, the equal-weight universe near ₹3.8 Cr and the Nifty 100 near ₹1.9 Cr.">
+        <p class="cap">Log scale. Same engine, dates and costs for the strategy and the equal-weight universe.</p>
+      </div>
+      <div class="grid" style="gap:calc(var(--u)*1.4)">
+        <table>
+          <thead><tr><th>Benchmark</th><th class="r">Return</th><th class="r">Net PNL</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>Strategy</td><td class="r">+1,076.5%</td><td class="r">₹10.76 Cr</td></tr>
+            <tr><td>Equal-weight universe <span class="muted small">(same 200 names, pays costs)</span></td><td class="r">+280.6%</td><td class="r">₹2.81 Cr</td></tr>
+            <tr><td>Nifty 100 index <span class="muted small">(cost-free)</span></td><td class="r">+89.4%</td><td class="r">₹0.89 Cr</td></tr>
+          </tbody>
+        </table>
+        <table>
+          <thead><tr><th>Year</th><th class="r">Strategy</th><th class="r">Eq-wt</th><th class="r">Nifty 100</th></tr></thead>
+          <tbody>
+            <tr><td>2021</td><td class="r">+160.3%</td><td class="r">+50.3%</td><td class="r">+25.0%</td></tr>
+            <tr><td>2022</td><td class="r">+22.2%</td><td class="r">+14.2%</td><td class="r">+3.6%</td></tr>
+            <tr><td>2023</td><td class="r">+74.3%</td><td class="r">+52.0%</td><td class="r">+20.0%</td></tr>
+            <tr><td>2024</td><td class="r">+86.4%</td><td class="r">+31.0%</td><td class="r">+11.8%</td></tr>
+            <tr><td>2025</td><td class="r">+13.7%</td><td class="r">+10.6%</td><td class="r">+9.0%</td></tr>
+          </tbody>
+        </table>
+        <p class="small"><b>The equal-weight universe is the fair bar.</b> It separates picking stocks from simply being invested in a rising market. Against it the strategy is +796 pp; against the index, +987 pp.</p>
+      </div>
+    </div>
+    <div class="foot"><span>Source: numbers.md §2 · yearly figures computed from output/sweep/monthly_reset</span><span>06 / 11</span></div>
+  </div></div>
+  <aside class="notes"><b>Say:</b> “Point to the equal-weight line, not the index. That's the comparison that measures selection.” <b>Be ready for:</b> 2021 alone was +160%, so the result is front-loaded. The strategy still beat equal weight in every year.</aside>
+</section>
+
+<!-- 7 · RESULTS II -->
+<section class="unit" id="s7">
+  <div class="slide"><div class="inner">
+    <div class="top">
+      <div><p class="kicker">Results · 2 of 2</p><h2>Not luck, not just risk, and the metrics defined</h2></div>
+      <div class="chips"><span class="chip">Robustness</span><span class="chip">Risk management</span><span class="chip">Transparency</span></div>
+    </div>
+    <div class="grid g-45-55" style="align-items:start">
+      <div class="grid" style="gap:calc(var(--u)*1)">
+        <div>
+          <img class="chart" src="figures/02_noise_band.png" alt="Histogram of 10,000 random 10-stock portfolios centred near ₹2.4 Cr, best near ₹6.5 Cr; the strategy is marked at ₹10.76 Cr, beyond every draw.">
+          <p class="cap"><b>0 of 10,000</b> random books beat it (+11.1σ). Best random draw ₹6.48 Cr. <b>96th percentile</b> on return per unit of risk.</p>
+        </div>
+        <div>
+          <img class="chart" src="figures/03_drawdown.png" alt="Drawdown from peak, 2021–2025. Worst −32.4% in February 2023; other troughs near −25% in mid-2022 and −24% in early 2025.">
+          <p class="cap">Worst: 20 Sep 2022 → 27 Feb 2023, recovered 21 Jul 2023.</p>
+        </div>
+      </div>
+      <div class="grid" style="gap:calc(var(--u)*1.2)">
+        <table>
+          <thead><tr><th>Metric</th><th class="r">Value</th><th>How it is defined</th></tr></thead>
+          <tbody>
+            <tr><td>Total Net PNL</td><td class="r">₹10.76 Cr</td><td class="small">Final value − ₹1 Cr, after every cost including the first purchase</td></tr>
+            <tr><td>CAGR</td><td class="r">63.78%</td><td class="small">Geometric, over calendar days ÷ 365.25</td></tr>
+            <tr><td>Sharpe</td><td class="r">2.42</td><td class="small">CAGR ÷ (daily σ × √252), risk-free 0. The guideline formula omits √252, which inflates it about 16×; we show both</td></tr>
+            <tr><td>Max drawdown</td><td class="r">−32.40%</td><td class="small">Peak to trough on daily portfolio value, after costs</td></tr>
+            <tr><td>Accuracy</td><td class="r">62.5%</td><td class="small">Round trips (entry to exit) that made money. Only 48.8% beat the benchmark over the same dates, so this is not proof of skill</td></tr>
+            <tr><td>Gain-to-loss</td><td class="r">2.01</td><td class="small">Average winning trip ÷ average losing trip. Total gains ÷ total losses: 3.35</td></tr>
+            <tr><td>Trades · turnover</td><td class="r">168 · 7.36×</td><td class="small">Round trips over 83 names (2.02 each), 758 fills · traded value ÷ NAV, annualised</td></tr>
+          </tbody>
+        </table>
+        <div class="grid g2" style="gap:calc(var(--u)*1)">
+          <div class="panel"><h3>Liquidity</h3><p class="small">99% of the 758 fills are under <b>1.82%</b> of that stock's 20-day average daily volume. The median is near zero. Market impact is negligible at ₹1 Cr.</p></div>
+          <div class="panel rust"><h3>2026 out of sample</h3><p class="small">Fresh ₹1 Cr in H1 2026: <b>+7.60%</b> against the Nifty 100's −6.65%, at the 88.9th percentile of a fresh band. Used only to reject, never to choose.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span>Source: numbers.md §1, §3, §5, §6 · docs/DECISIONS.md D3–D10</span><span>07 / 11</span></div>
+  </div></div>
+  <aside class="notes"><b>Say:</b> “Two readings of the band: the raw one says it beats random picking; the risk-adjusted one says it isn't just taking more risk. We quote both.” <b>On accuracy:</b> volunteer the 48.8% yourself; the median stock in this universe rose 173.8%, so most trades made money. <b>On 2026:</b> the quarterly version scored slightly higher there (+7.69%), and we still submitted monthly because the rule says 2021–25 decides.</aside>
+</section>
+
+<!-- 8 · CAVEAT: UNIVERSE -->
+<section class="unit" id="s8">
+  <div class="slide"><div class="inner">
+    <div class="top">
+      <div><p class="kicker">Caveat · 1 of 2</p><h2>The mandated universe looks forward. We measured by how much.</h2></div>
+      <div class="chips"><span class="chip">Transparency</span><span class="chip">Robustness</span></div>
+    </div>
+    <div class="grid g-55-45" style="align-items:start">
+      <div class="grid" style="gap:calc(var(--u)*1.2)">
+        <div class="grid g2" style="gap:calc(var(--u)*1.2)">
+          <div><h3>1 · Index inclusion</h3><p class="small">A stock is in today's Nifty 100 partly <i>because</i> it rose over 2021–25. We pick winners from a list already filtered for winning.</p></div>
+          <div><h3>2 · Survivorship</h3><p class="small">Names that fell out of the indices are absent, so the strategy is never offered them and can never be caught holding one.</p></div>
+        </div>
+        <div>
+          <h3>How we measured it</h3>
+          <p class="small">We rebuilt historical membership from <b>27 NSE index-review press releases</b> (43 changes, found by sweeping 976 PDFs). We walked today's list backwards and checked at every step that each index stays at 100 names, added names are present and removed names are absent. One config switch runs either universe.</p>
+        </div>
+        <table>
+          <thead><tr><th>Same rule, same engine</th><th class="r">Today's lists</th><th class="r">As of each date</th><th class="r">Gap</th></tr></thead>
+          <tbody>
+            <tr><td>Quarterly baseline</td><td class="r">+876.5%</td><td class="r">+388.0%</td><td class="r"><b>488 pp</b></td></tr>
+            <tr class="hl"><td>Submitted (monthly)</td><td class="r">+1,076.5%</td><td class="r">+414.4%</td><td class="r"><b>662 pp</b></td></tr>
+            <tr><td>Equal-weight universe</td><td class="r">+284.9%</td><td class="r">+151.6%</td><td class="r">133 pp</td></tr>
+            <tr><td>Random books beating baseline</td><td class="r">0 / 10,000</td><td class="r">4 / 10,000</td><td class="r"></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid" style="gap:calc(var(--u)*1.2)">
+        <div class="panel rust">
+          <p class="callout" style="color:var(--rust)">More than half the headline comes from the universe, not the rule.</p>
+          <p class="small" style="margin-top:calc(var(--u)*.6)">The edge over the strategy's own universe still survives: +236 pp, beating 9,996 of 10,000 random books, at the 74th percentile per unit of risk.</p>
+        </div>
+        <div class="panel">
+          <h3>What is <i>not</i> forward-looking</h3>
+          <ul class="tight small">
+            <li>The signal uses closes through yesterday; trades fill at today's open.</li>
+            <li>A test scrambles every price from the rebalance date onward and requires the same 10 picks.</li>
+            <li>A second test scrambles the lookback window and requires the picks to change, which shows the first test isn't empty.</li>
+            <li>Tradeability is judged on yesterday's volume, never today's.</li>
+          </ul>
+        </div>
+        <p class="small muted">Residual: 6 former members have no usable price history (DHANI, GSPL, HDFC, ISEC, MINDTREE, PEL) and are excluded.</p>
+      </div>
+    </div>
+    <div class="foot"><span>Source: output/report/point_in_time/ · docs/DECISIONS.md A3-r, A17 · ledger row PIT-mo-reset</span><span>08 / 11</span></div>
+  </div></div>
+  <aside class="notes"><b>Say this before they ask:</b> “The organisers specified today's constituents, so that's what we submit. But we rebuilt the historical lists and measured the effect: 488 points on the baseline, about 662 on the submitted monthly rule.” <b>Keep the distinction:</b> the hindsight sits in the mandated universe; the backtest itself is causal and tested.</aside>
+</section>
+
+<!-- 9 · CAVEAT: RISK -->
+<section class="unit" id="s9">
+  <div class="slide"><div class="inner">
+    <div class="top">
+      <div><p class="kicker">Caveat · 2 of 2</p><h2>Built to maximise the score. Here is the risk that buys.</h2></div>
+      <div class="chips"><span class="chip">Risk management</span><span class="chip">Transparency</span></div>
+    </div>
+    <div class="grid g3">
+      <div class="grid" style="gap:calc(var(--u)*1)">
+        <div>
+          <h3>Risks we accepted on purpose</h3>
+          <ul class="tight small">
+            <li><b>−32.4% drawdown</b>, no stop-loss, always fully invested.</li>
+            <li><b>Concentration:</b> 10 names at 10% each. Volatility 31.8% against 18.7% for the median random book.</li>
+            <li><b>Themes:</b> Adani names in 2021–22, PSU banks in 2023, rail, defence and power PSUs in 2024–25.</li>
+            <li><b>One regime:</b> 2021 alone returned +160%. The 2026 test covers only six months.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Risks we controlled</h3>
+          <ul class="tight small">
+            <li>Look-ahead: causal signal with tests (slide 8).</li>
+            <li>Cash: costs are reserved up front, so cash can never go negative. The trade log reconciles to the NAV within ₹1 on every run.</li>
+            <li>Liquidity: 99% of fills are under 1.82% of daily volume.</li>
+            <li>Corporate actions: exit before demergers; whole shares only.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="panel rust">
+        <h3>Worst episode: Jan–Feb 2023</h3>
+        <p class="small">The book held ADANIENT, ADANIPOWER and ATGL when the short-seller report landed on 24 Jan 2023. At the 1 Feb rebalance it kept all three and topped them back up to 10%, because the skipped month hid the crash from the signal.</p>
+        <p class="small" style="margin-top:calc(var(--u)*.6)">The portfolio fell <b>26.7%</b> from 24 Jan to 28 Feb. ADANIENT and ATGL left the book on 1 Mar.</p>
+        <p class="small" style="margin-top:calc(var(--u)*.6)"><b>Why we didn't patch it:</b> a filter fitted to one known event would be overfitting. Dropping the skip month changes five-year PNL by only −0.17σ.</p>
+        <p class="cap">Computed from output/sweep/monthly_reset holdings and NAV.</p>
+      </div>
+      <div>
+        <h3>What a live book would add</h3>
+        <table>
+          <thead><tr><th>Concern</th><th>Live book</th></tr></thead>
+          <tbody>
+            <tr><td>Drawdown</td><td class="small">Position limits, a drawdown circuit-breaker or a volatility target</td></tr>
+            <tr><td>Concentration</td><td class="small">Sector and group caps, more names</td></tr>
+            <tr><td>Costs</td><td class="small">STT, stamp duty, exchange fees, GST and slippage modelled separately</td></tr>
+            <tr><td>Signal</td><td class="small">Several factors; watch for crowding</td></tr>
+            <tr><td>Regime</td><td class="small">Momentum crashes on sharp reversals; some regime awareness</td></tr>
+          </tbody>
+        </table>
+        <p class="small muted" style="margin-top:calc(var(--u)*.7)">Also: price return only (dividends ≈ 9 pp), Yahoo data, demergers exited rather than adjusted.</p>
+      </div>
+    </div>
+    <div class="foot"><span>Source: WALKTHROUGH.md §8 · numbers.md §3, §5 · docs/PROJECT.md §10</span><span>09 / 11</span></div>
+  </div></div>
+  <aside class="notes"><b>Say:</b> “Under a raw-PNL score, volatility is rewarded. We chose to take it, said so in writing before building, and here is what a real portfolio would change.” <b>On Adani:</b> volunteer it. It is the largest drawdown and a jury will find it in the holdings. Answer with the rule, not an excuse.</aside>
+</section>
+
+<!-- 10 · CONCLUSION -->
+<section class="unit" id="s10">
+  <div class="slide"><div class="inner">
+    <div class="top">
+      <div><p class="kicker">Conclusion</p><h2>A simple rule, tested hard, with its limits measured</h2></div>
+      <div class="chips"><span class="chip">Rationale</span><span class="chip">Robustness</span><span class="chip">Risk management</span><span class="chip">Transparency</span><span class="chip">Sound portfolio logic</span></div>
+    </div>
+    <div class="grid g3" style="flex:1; align-content:center">
+      <div class="panel"><p class="kicker">01 · The rule</p><p class="callout">12-1 momentum, top 10, equal weight, monthly.</p><p class="small" style="margin-top:calc(var(--u)*.6)">₹10.76 Cr net PNL. Beats all 10,000 random portfolios and sits at the 96th percentile per unit of risk. No fitted parameter.</p></div>
+      <div class="panel"><p class="kicker">02 · The evidence</p><p class="callout">59 configurations, all pre-registered. The simplest won.</p><p class="small" style="margin-top:calc(var(--u)*.6)">Frequency was the only lever that paid. The textbook lookback won its own sweep. Every loser is published with its failed predictions.</p></div>
+      <div class="panel rust"><p class="kicker">03 · The honesty</p><p class="callout" style="color:var(--rust)">We measured the caveats instead of leaving them to you.</p><p class="small" style="margin-top:calc(var(--u)*.6)">488–662 pp of universe bias, a −32% drawdown and one market regime, all quantified and reproducible from the repo.</p></div>
+    </div>
+    <div>
+      <h3>With more time</h3>
+      <p class="small">A matched null band (perturbing our own rule, not random books) · inverse-volatility weighting for Sharpe · a full Indian cost model · regime sub-period tests inside 2021–25</p>
+    </div>
+    <div class="foot"><span>docs/PROJECT.md §15</span><span>10 / 11</span></div>
+  </div></div>
+  <aside class="notes"><b>Say:</b> “If there's one thing to take away: a strategy that survived a search this wide, and is reported with its failures, is a different object from one tuned until it looked good.”</aside>
+</section>
+
+<!-- 11 · THANK YOU -->
+<section class="unit" id="s11">
+  <div class="slide"><div class="inner">
+    <p class="kicker">Thank you</p>
+    <div class="title-grid">
+      <div>
+        <h1>Questions?</h1>
+        <p class="lede"><span class="placeholder">[Team name]</span> · <span class="placeholder">[Member names]</span></p>
+        <p class="num" style="margin-top:calc(var(--u)*1.4); font-size:calc(var(--u)*1.4)">github.com/jashD11/finesseXcitadel</p>
+      </div>
+      <div class="grid" style="gap:calc(var(--u)*1.2)">
+        <div class="panel">
+          <h3>Check it yourself</h3>
+          <ul class="tight small">
+            <li><span class="num">pytest tests/</span>: 125 tests for causality, accounting, cleaning and selection.</li>
+            <li>The headline from scratch takes about 6 minutes and prints <span class="num">₹107,649,806</span>.</li>
+            <li>Every run: <span class="num">output/report/configurations.md</span></li>
+            <li>Every decision (61): <span class="num">docs/DECISIONS.md</span></li>
+          </ul>
+        </div>
+        <div class="panel rust">
+          <h3>Backup, if asked</h3>
+          <p class="small">Adani detail · year-by-year attribution · 2026 by variant · why reset vs drift flips with the universe · the Sharpe formula · reproduction commands</p>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span>Finesse × Citadel · Round 2</span><span>11 / 11</span></div>
+  </div></div>
+  <aside class="notes"><b>Q&amp;A anchors:</b> look-ahead → slide 8 tests · overfitting → slide 4 · why not Sharpe-optimise → the score is PNL · smallcaps → −₹4.39 Cr · can it trade → 1.82% of daily volume · what breaks it → sharp momentum reversals.</aside>
+</section>
+
+</main>
+
+<div class="toolbar" role="toolbar" aria-label="Slide navigation">
+  <button type="button" id="prev" aria-label="Previous slide">◀</button>
+  <span id="count">1 / 11</span>
+  <button type="button" id="next" aria-label="Next slide">▶</button>
+  <button type="button" id="full">Full screen</button>
+</div>
+
+<script>
+(function () {
+  var units = Array.prototype.slice.call(document.querySelectorAll('.unit'));
+  var count = document.getElementById('count');
+  function current() {
+    var best = 0, bestDist = Infinity;
+    units.forEach(function (u, i) {
+      var d = Math.abs(u.getBoundingClientRect().top - 16);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    return best;
+  }
+  function go(i) {
+    i = Math.max(0, Math.min(units.length - 1, i));
+    units[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function update() { count.textContent = (current() + 1) + ' / ' + units.length; }
+  document.getElementById('prev').addEventListener('click', function () { go(current() - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(current() + 1); });
+  document.getElementById('full').addEventListener('click', function () {
+    try {
+      if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(function () {}); }
+      else { document.exitFullscreen(); }
+    } catch (e) {}
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.target.closest && e.target.closest('input, textarea')) return;
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].indexOf(e.key) > -1) { e.preventDefault(); go(current() + 1); }
+    if (['ArrowLeft', 'ArrowUp', 'PageUp'].indexOf(e.key) > -1) { e.preventDefault(); go(current() - 1); }
+  });
+  window.addEventListener('scroll', function () { window.requestAnimationFrame(update); }, { passive: true });
+  update();
+})();
+</script>
+</body>
+</html>
